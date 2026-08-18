@@ -1,0 +1,1287 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第一章：抵达——探索</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/progress-bar.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            background-image: url('assets/images/第一章交互背景.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+        }
+
+        /* 探索页面舞台 */
+        .explore-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 日记本内页 */
+        .diary-page {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: min(72vw, 820px);
+            max-height: 76vh;
+            padding: 5vh 5vw;
+            overflow-y: auto;
+            background-color: #F7F4EC;
+            background-image: url('assets/第一章/纸页.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            border-radius: 3px;
+            box-shadow:
+                0 8px 36px rgba(0, 0, 0, 0.14),
+                0 0 0 1px rgba(117, 104, 91, 0.12),
+                inset 0 0 80px rgba(160, 150, 130, 0.12);
+            z-index: 40;
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -50%) scale(0.96);
+            transition: opacity 0.6s ease, visibility 0.6s ease, transform 0.6s ease;
+        }
+
+        .diary-page.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .diary-page::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
+            left: 20px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .diary-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .diary-text p {
+            margin-bottom: 1.6em;
+            text-indent: 2em;
+        }
+
+        .diary-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 2em;
+            color: #5C5348;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .diary-page::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .diary-page::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .diary-page::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        /* 关闭日记 */
+        .close-diary {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.7em 1.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-decoration: none;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-diary.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-diary:hover,
+        .close-diary:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        /* 听音海螺纪念物 */
+        .conch-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2.5em;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .conch-section.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .conch-image {
+            width: min(120px, 28vw);
+            height: auto;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .conch-image:hover,
+        .conch-image:focus {
+            transform: scale(1.05);
+        }
+
+        .conch-image.playing {
+            animation: conchPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes conchPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .conch-caption {
+            margin-top: 1em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+            letter-spacing: 0.08em;
+            line-height: 1.8;
+            color: #5C5348;
+            text-align: center;
+            max-width: min(60vw, 420px);
+        }
+
+        /* 底部交互面板 */
+        .bottom-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: clamp(16px, 4vw, 48px);
+            padding: 0 5vw 6vh;
+            z-index: 5;
+            opacity: 0;
+            animation: panelFadeIn 1.2s ease-out 0.4s forwards;
+        }
+
+        @keyframes panelFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 状态图片展示面板 */
+        .status-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .status-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .status-content {
+            position: relative;
+            width: min(78vw, 960px);
+            height: min(78vh, 680px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .status-panel.open .status-content {
+            transform: scale(1);
+        }
+
+        .status-image {
+            width: 100%;
+            height: calc(100% - 60px);
+            object-fit: fill;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .close-status {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-status:hover,
+        .close-status:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 任务面板（雾气擦除小游戏） */
+        .task-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .task-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .task-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 0;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .task-panel.open .task-content {
+            transform: scale(1);
+        }
+
+        .task-scroll {
+            position: relative;
+            flex: 1;
+            overflow-y: auto;
+            padding: 5vh 5vw;
+            scrollbar-width: thin;
+        }
+
+        .task-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .task-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .task-scroll::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        .task-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+        }
+
+        .task-text p {
+            margin-bottom: 1.4em;
+            text-indent: 2em;
+        }
+
+        .task-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 1.8em;
+            color: #5C5348;
+        }
+
+        .task-image {
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            display: block;
+            margin: 1em 0 0;
+            border-radius: 2px;
+        }
+
+        .task-image-caption {
+            text-align: center;
+            font-size: 0.85em;
+            color: #75685B;
+            margin-top: 0.6em;
+            letter-spacing: 0.1em;
+        }
+
+        .close-task {
+            display: block;
+            width: fit-content;
+            margin: 2em auto 0;
+            padding: 0.7em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-task.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-task:hover,
+        .close-task:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 雾气画布 */
+        .fog-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            cursor: pointer;
+            touch-action: none;
+        }
+
+        /* 擦除雾气提示 */
+        .fog-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2.2vw, 1.4rem);
+            letter-spacing: 0.35em;
+            color: #6B6055;
+            text-shadow: 0 1px 8px rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        .fog-hint.hidden {
+            opacity: 0;
+        }
+
+        /* 科考实拍展示面板 */
+        .field-photo-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .field-photo-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .field-photo-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .field-photo-panel.open .field-photo-content {
+            transform: scale(1);
+        }
+
+        .field-photo-image {
+            width: 100%;
+            height: calc(100% - 110px);
+            object-fit: contain;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .field-photo-caption {
+            margin-top: 14px;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.12em;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        .close-field-photo {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-field-photo:hover,
+        .close-field-photo:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 章节推进纸条 */
+        .advance-note {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.48);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .advance-note.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .advance-note-content {
+            position: relative;
+            width: min(72vw, 620px);
+            padding: 6vh 6vw;
+            background:
+                linear-gradient(to bottom, #F5F0E3, #EDE8DC);
+            background-size: cover;
+            border-radius: 2px;
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.18),
+                0 0 0 1px rgba(117, 104, 91, 0.15),
+                inset 0 0 50px rgba(160, 150, 130, 0.1);
+            transform: scale(0.96) rotate(-1deg);
+            transition: transform 0.6s ease;
+        }
+
+        .advance-note.open .advance-note-content {
+            transform: scale(1) rotate(-0.5deg);
+        }
+
+        .advance-note-content::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            bottom: 16px;
+            left: 16px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .advance-note-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2vw, 1.35rem);
+            line-height: 2.2;
+            letter-spacing: 0.06em;
+            color: #3D352C;
+            text-align: center;
+            min-height: 4em;
+        }
+
+        .advance-note-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        .next-chapter-btn {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.75em 2em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.32);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .next-chapter-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .next-chapter-btn:hover,
+        .next-chapter-btn:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 卷轴入口 */
+        .scroll-entry {
+            position: relative;
+            flex: 1;
+            max-width: 220px;
+            padding: 1.1em 0.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.8rem, 1.4vw, 1rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            background: linear-gradient(to right, #E2D9C4 0%, #F5F0E3 12%, #F5F0E3 88%, #E2D9C4 100%);
+            border: 1px solid rgba(117, 104, 91, 0.32);
+            border-radius: 3px;
+            box-shadow:
+                0 4px 14px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+        }
+
+        .scroll-entry::before,
+        .scroll-entry::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            width: 14px;
+            height: calc(100% + 2px);
+            background: linear-gradient(to bottom, #C9BEA8, #DDD5C2 40%, #DDD5C2 60%, #C9BEA8);
+            border: 1px solid rgba(117, 104, 91, 0.35);
+            border-radius: 2px;
+            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.06);
+            pointer-events: none;
+        }
+
+        .scroll-entry::before {
+            left: -8px;
+        }
+
+        .scroll-entry::after {
+            right: -8px;
+        }
+
+        .scroll-entry:hover,
+        .scroll-entry:focus {
+            color: #3D352C;
+            background: linear-gradient(to right, #DDD5C2 0%, #FAF8F0 12%, #FAF8F0 88%, #DDD5C2 100%);
+            transform: translateY(-4px);
+            box-shadow:
+                0 8px 22px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+    </style>
+</head>
+<body>
+    <div class="explore-stage">
+        <!-- 日记本内页 -->
+        <article class="diary-page" id="diary-page" aria-hidden="true">
+            <div class="diary-text" id="diary-text"></div>
+            <div class="conch-section" id="conch-section">
+                <img class="conch-image" id="conch-image" src="assets/第一章/海螺听音.png" alt="听音海螺">
+                <div class="conch-caption">解锁纪念物：听音海螺——轻触海螺，能听到平潭海边的海浪</div>
+            </div>
+            <a class="close-diary" id="close-diary" aria-label="关闭日记">关闭日记</a>
+        </article>
+
+        <!-- 状态图片展示面板 -->
+        <div class="status-panel" id="status-panel" aria-hidden="true">
+            <div class="status-content">
+                <img class="status-image" id="status-image" src="assets/第一章/状态1.jpg" alt="状态查看">
+                <button class="close-status" id="close-status" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 任务面板（雾气擦除小游戏） -->
+        <div class="task-panel" id="task-panel" aria-hidden="true">
+            <div class="task-content" id="task-content">
+                <div class="task-scroll" id="task-scroll">
+                    <div class="task-text" id="task-text">
+                        <p>平潭岛是福建第一大岛，坐拥“陆海兼备”的地理禀赋，既为先民提供了贝类、鱼类等丰饶的海洋食物资源，也留出了可供耕作的滩涂台地，使这片土地在数千年间持续吸引人群定居、繁衍、创造文化。</p>
+                        <p>正是这样一片丰沃的土地，孕育出了中国东南沿海最早、最完整的史前海洋文化序列，截至目前，平潭岛及周边区域已确认37处与南岛语族密切相关的史前遗址，时间跨度由旧石器时代延续至商周时期。平潭，成为南岛语族早期人群形成与向海扩散的“始发地”。</p>
+                        <img class="task-image" src="assets/images/平潭风貌.png" alt="平潭风貌">
+                        <div class="task-image-caption">平潭风貌</div>
+                        <button class="close-task" id="close-task" type="button">关闭</button>
+                    </div>
+                    <canvas class="fog-canvas" id="fog-canvas"></canvas>
+                </div>
+                <div class="fog-hint" id="fog-hint">擦除雾气</div>
+            </div>
+        </div>
+
+        <!-- 科考实拍展示面板 -->
+        <div class="field-photo-panel" id="field-photo-panel" aria-hidden="true">
+            <div class="field-photo-content">
+                <img class="field-photo-image" src="assets/第一章/科考实拍1.jpg" alt="科考实拍">
+                <div class="field-photo-caption">拍摄于10月12日，初登平潭岛。</div>
+                <button class="close-field-photo" id="close-field-photo" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 章节推进纸条 -->
+        <div class="advance-note" id="advance-note" aria-hidden="true">
+            <div class="advance-note-content">
+                <div class="advance-note-text" id="advance-note-text"></div>
+                <button class="next-chapter-btn" id="next-chapter-btn" type="button">阅读下一章节</button>
+            </div>
+        </div>
+
+        <!-- 底部交互面板 -->
+        <nav class="bottom-panel" id="bottom-panel">
+            <button class="scroll-entry" id="btn-read-log" type="button">阅读日志</button>
+            <button class="scroll-entry" id="btn-check-status" type="button">查看状态</button>
+            <button class="scroll-entry" id="btn-todo" type="button">待办任务</button>
+            <button class="scroll-entry" id="btn-field-photos" type="button">科考实拍</button>
+        </nav>
+    </div>
+
+    <script>
+        (function () {
+            const diaryPage = document.getElementById('diary-page');
+            const diaryText = document.getElementById('diary-text');
+            const closeDiary = document.getElementById('close-diary');
+            const conchSection = document.getElementById('conch-section');
+            const conchImage = document.getElementById('conch-image');
+            const statusPanel = document.getElementById('status-panel');
+            const closeStatus = document.getElementById('close-status');
+            const taskPanel = document.getElementById('task-panel');
+            const taskContent = document.getElementById('task-content');
+            const taskScroll = document.getElementById('task-scroll');
+            const fogCanvas = document.getElementById('fog-canvas');
+            const fogHint = document.getElementById('fog-hint');
+            const closeTask = document.getElementById('close-task');
+            const fieldPhotoPanel = document.getElementById('field-photo-panel');
+            const closeFieldPhoto = document.getElementById('close-field-photo');
+            const advanceNote = document.getElementById('advance-note');
+            const advanceNoteText = document.getElementById('advance-note-text');
+            const nextChapterBtn = document.getElementById('next-chapter-btn');
+            const btnReadLog = document.getElementById('btn-read-log');
+            const btnCheckStatus = document.getElementById('btn-check-status');
+            const btnTodo = document.getElementById('btn-todo');
+            const btnFieldPhotos = document.getElementById('btn-field-photos');
+
+            const paragraphs = [
+                '日期：10月12日  天气：大雾',
+                '我是一名新加入平潭南岛语族科考项目的考古学家，今日，我和同伴需前往驻地，完成我们的任务。',
+                '轮渡靠岸时，雾从海面上漫过来，模糊一片。我站在甲板上，直到脚踩地面，才确认自己真的到了平潭。',
+                '我忽然觉得，我对这次田野工作的所有想象，都和这片雾一样，模糊、没有形状。',
+                '同伴老陈说，待会儿雾淡了，带我去逛一逛，平潭是个很美的地方。'
+            ];
+
+            const baseSpeed = 52;
+            const pauseAfterComma = 120;
+            const pauseAfterPeriod = 280;
+            const pauseBetweenParagraphs = 500;
+
+            let pIndex = 0;
+            let cIndex = 0;
+            let currentP = null;
+            let hasTyped = false;
+            let isTyping = false;
+            let diaryTypingActive = false;
+            let conchCompleted = false;
+            let waveAudio = null;
+
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+
+            function resetDiary() {
+                diaryText.innerHTML = '';
+                pIndex = 0;
+                cIndex = 0;
+                currentP = null;
+            }
+
+            function startParagraph() {
+                currentP = document.createElement('p');
+                diaryText.appendChild(currentP);
+                cIndex = 0;
+            }
+
+            function getDelay(char) {
+                if ('，、'.includes(char)) return pauseAfterComma;
+                if ('。！？'.includes(char)) return pauseAfterPeriod;
+                return baseSpeed;
+            }
+
+            let typingAudio = null;
+
+            function initTypingAudio() {
+                if (!typingAudio) {
+                    typingAudio = new Audio('assets/第一章/打字音效.mp3');
+                    typingAudio.preload = 'auto';
+                    typingAudio.loop = true;
+                    typingAudio.volume = 0.7;
+                }
+            }
+
+            function startTypingSound() {
+                initTypingAudio();
+                if (!typingAudio) return;
+                typingAudio.currentTime = 0;
+                typingAudio.play().catch(function () {});
+            }
+
+            function stopTypingSound() {
+                if (!typingAudio) return;
+                typingAudio.pause();
+                typingAudio.currentTime = 0;
+            }
+
+            function initWaveAudio() {
+                if (!waveAudio) {
+                    waveAudio = new Audio('assets/第一章/海浪声.mp3');
+                    waveAudio.preload = 'auto';
+                    waveAudio.volume = 0.2352;
+                }
+            }
+
+            function playWaveSound() {
+                initWaveAudio();
+                if (!waveAudio) return;
+                waveAudio.currentTime = 0;
+                waveAudio.play().catch(function () {});
+            }
+
+            function showConchSection() {
+                if (conchSection) conchSection.classList.add('visible');
+            }
+
+            function hideConchSection() {
+                if (conchSection) conchSection.classList.remove('visible');
+            }
+
+            function onConchClick() {
+                if (!diaryPage.classList.contains('open')) return;
+                if (conchCompleted) return;
+                conchCompleted = true;
+                playWaveSound();
+                if (conchImage) conchImage.classList.add('playing');
+                setTimeout(function () {
+                    if (!diaryPage.classList.contains('open')) return;
+                    closeDiary.classList.add('visible');
+                }, 800);
+            }
+
+            function typeNext() {
+                if (!diaryTypingActive) return;
+                if (pIndex >= paragraphs.length) {
+                    if (!diaryTypingActive) return;
+                    isTyping = false;
+                    hasTyped = true;
+                    stopTypingSound();
+                    cursor.style.animationIterationCount = '3';
+                    setTimeout(function () {
+                        if (!diaryTypingActive) return;
+                        cursor.style.opacity = '0';
+                        if (conchCompleted) {
+                            closeDiary.classList.add('visible');
+                        } else {
+                            showConchSection();
+                        }
+                    }, 400);
+                    return;
+                }
+
+                if (currentP === null) {
+                    startParagraph();
+                }
+
+                const text = paragraphs[pIndex];
+                if (cIndex < text.length) {
+                    const char = text[cIndex];
+                    currentP.textContent += char;
+                    cIndex++;
+                    currentP.appendChild(cursor);
+                    setTimeout(typeNext, getDelay(char));
+                } else {
+                    pIndex++;
+                    currentP = null;
+                    if (pIndex < paragraphs.length) {
+                        setTimeout(typeNext, pauseBetweenParagraphs);
+                    } else {
+                        typeNext();
+                    }
+                }
+            }
+
+            function openDiary() {
+                conchCompleted = false;
+                // 关闭其他可能遮挡日记的弹窗（不标记完成状态）
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+
+                diaryPage.setAttribute('aria-hidden', 'false');
+                diaryPage.classList.add('open');
+
+                if (!hasTyped) {
+                    resetDiary();
+                    hideConchSection();
+                    closeDiary.classList.remove('visible');
+                    if (conchImage) conchImage.classList.remove('playing');
+                    diaryTypingActive = true;
+                    isTyping = true;
+                    startTypingSound();
+                    setTimeout(typeNext, 300);
+                } else {
+                    // 已经阅读过，直接显示海螺
+                    diaryTypingActive = true;
+                    showConchSection();
+                }
+            }
+
+            const panelCompleted = {
+                log: false,
+                status: false,
+                task: false,
+                fieldPhoto: false
+            };
+            let advanceNoteShown = false;
+
+            function checkAllPanelsCompleted() {
+                if (advanceNoteShown) return;
+                const allCompleted = panelCompleted.log && panelCompleted.status &&
+                                     panelCompleted.task && panelCompleted.fieldPhoto;
+                if (allCompleted) {
+                    advanceNoteShown = true;
+                    setTimeout(showAdvanceNote, 400);
+                }
+            }
+
+            function showAdvanceNote() {
+                advanceNote.setAttribute('aria-hidden', 'false');
+                advanceNote.classList.add('open');
+                typeAdvanceNote();
+            }
+
+            function typeAdvanceNote() {
+                const text = '我觉得我可能什么都找不到。又觉得，也许有什么东西正在等我。';
+                advanceNoteText.innerHTML = '';
+                let index = 0;
+                const cursor = document.createElement('span');
+                cursor.className = 'advance-note-cursor';
+
+                function typeChar() {
+                    if (index < text.length) {
+                        advanceNoteText.textContent += text[index];
+                        index++;
+                        advanceNoteText.appendChild(cursor);
+                        setTimeout(typeChar, 70);
+                    } else {
+                        stopTypingSound();
+                        cursor.style.animationIterationCount = '3';
+                        setTimeout(function () {
+                            cursor.style.opacity = '0';
+                            nextChapterBtn.classList.add('visible');
+                        }, 500);
+                    }
+                }
+
+                startTypingSound();
+                setTimeout(typeChar, 400);
+            }
+
+            function closeDiaryPanel() {
+                diaryTypingActive = false;
+                stopTypingSound();
+                hideConchSection();
+                if (conchImage) conchImage.classList.remove('playing');
+                if (waveAudio) {
+                    waveAudio.pause();
+                    waveAudio.currentTime = 0;
+                }
+                diaryPage.classList.remove('open');
+                diaryPage.setAttribute('aria-hidden', 'true');
+                closeDiary.classList.remove('visible');
+                panelCompleted.log = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openStatusPanel() {
+                statusPanel.setAttribute('aria-hidden', 'false');
+                statusPanel.classList.add('open');
+            }
+
+            function closeStatusPanel() {
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.status = true;
+                checkAllPanelsCompleted();
+            }
+
+            // 任务面板（雾气擦除）逻辑
+            let fogCtx = null;
+            let fogRevealed = false;
+            let fogDrawing = false;
+            let taskCompleted = false;
+            let lastFogCheckTime = 0;
+            const fogRadius = 36;
+            const revealThreshold = 0.30;
+            const fogCheckInterval = 50; // 每 50ms 最多检查一次擦除进度
+
+            function initFogCanvas() {
+                if (!fogCanvas || !taskScroll) return;
+
+                const rect = taskScroll.getBoundingClientRect();
+                const scrollHeight = taskScroll.scrollHeight;
+                const dpr = window.devicePixelRatio || 1;
+                fogCanvas.width = Math.floor(rect.width * dpr);
+                fogCanvas.height = Math.floor(scrollHeight * dpr);
+                fogCanvas.style.width = rect.width + 'px';
+                fogCanvas.style.height = scrollHeight + 'px';
+
+                fogCtx = fogCanvas.getContext('2d');
+                fogCtx.scale(dpr, dpr);
+                fogCtx.fillStyle = '#E8E4DA';
+                fogCtx.fillRect(0, 0, rect.width, scrollHeight);
+
+                // 添加雾气渐变层次
+                const gradient = fogCtx.createRadialGradient(
+                    rect.width * 0.5, scrollHeight * 0.5, 0,
+                    rect.width * 0.5, scrollHeight * 0.5, Math.max(rect.width, scrollHeight) * 0.7
+                );
+                gradient.addColorStop(0, 'rgba(232, 228, 218, 1)');
+                gradient.addColorStop(0.6, 'rgba(218, 212, 198, 1)');
+                gradient.addColorStop(1, 'rgba(205, 198, 182, 1)');
+                fogCtx.fillStyle = gradient;
+                fogCtx.fillRect(0, 0, rect.width, scrollHeight);
+
+                // 添加细微噪点，增强雾气自然感
+                for (let i = 0; i < 120; i++) {
+                    const x = Math.random() * rect.width;
+                    const y = Math.random() * scrollHeight;
+                    const r = Math.random() * 80 + 30;
+                    const g = fogCtx.createRadialGradient(x, y, 0, x, y, r);
+                    g.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+                    g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    fogCtx.fillStyle = g;
+                    fogCtx.beginPath();
+                    fogCtx.arc(x, y, r, 0, Math.PI * 2);
+                    fogCtx.fill();
+                }
+            }
+
+            function getFogPoint(event) {
+                const rect = fogCanvas.getBoundingClientRect();
+                const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+                const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+
+            function eraseFog(x, y) {
+                if (!fogCtx) return;
+                fogCtx.globalCompositeOperation = 'destination-out';
+                const gradient = fogCtx.createRadialGradient(x, y, 0, x, y, fogRadius);
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+                gradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.6)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                fogCtx.fillStyle = gradient;
+                fogCtx.beginPath();
+                fogCtx.arc(x, y, fogRadius, 0, Math.PI * 2);
+                fogCtx.fill();
+                fogCtx.globalCompositeOperation = 'source-over';
+            }
+
+            function checkFogReveal() {
+                if (!fogCtx || fogRevealed) return;
+                const now = performance.now();
+                if (now - lastFogCheckTime < fogCheckInterval) return;
+                lastFogCheckTime = now;
+                const dpr = window.devicePixelRatio || 1;
+                const width = fogCanvas.width;
+                const visibleHeight = Math.min(
+                    Math.floor(taskScroll.clientHeight * dpr),
+                    fogCanvas.height
+                );
+                const visibleTop = Math.min(
+                    Math.floor(taskScroll.scrollTop * dpr),
+                    Math.max(0, fogCanvas.height - visibleHeight)
+                );
+                const imageData = fogCtx.getImageData(0, visibleTop, width, visibleHeight);
+                const data = imageData.data;
+                let transparent = 0;
+                const step = 12; // 采样步长，提升性能
+                const total = Math.ceil(width / step) * Math.ceil(visibleHeight / step);
+
+                for (let y = 0; y < visibleHeight; y += step) {
+                    for (let x = 0; x < width; x += step) {
+                        const index = (y * width + x) * 4;
+                        if (data[index + 3] < 128) {
+                            transparent++;
+                        }
+                    }
+                }
+
+                if (transparent / total > revealThreshold) {
+                    clearFog();
+                }
+            }
+
+            function clearFog() {
+                if (!fogCtx || fogRevealed) return;
+                fogRevealed = true;
+                taskCompleted = true;
+                fogCanvas.style.transition = 'opacity 0.8s ease';
+                fogCanvas.style.opacity = '0';
+                fogHint.classList.add('hidden');
+                setTimeout(function () {
+                    fogCanvas.style.visibility = 'hidden';
+                    closeTask.classList.add('visible');
+                }, 800);
+            }
+
+            function bindFogEvents() {
+                function onMove(event) {
+                    if (fogRevealed) return;
+                    event.preventDefault();
+                    const point = getFogPoint(event);
+                    eraseFog(point.x, point.y);
+                    requestAnimationFrame(checkFogReveal);
+                }
+
+                function onEnd() {
+                    fogDrawing = false;
+                }
+
+                fogCanvas.addEventListener('mousedown', function (event) {
+                    if (fogRevealed) return;
+                    fogDrawing = true;
+                    const point = getFogPoint(event);
+                    eraseFog(point.x, point.y);
+                    checkFogReveal();
+                });
+
+                fogCanvas.addEventListener('mousemove', function (event) {
+                    if (!fogDrawing || fogRevealed) return;
+                    onMove(event);
+                });
+
+                fogCanvas.addEventListener('mouseup', onEnd);
+                fogCanvas.addEventListener('mouseleave', onEnd);
+
+                fogCanvas.addEventListener('touchstart', function (event) {
+                    if (fogRevealed) return;
+                    fogDrawing = true;
+                    onMove(event);
+                }, { passive: false });
+
+                fogCanvas.addEventListener('touchmove', function (event) {
+                    if (!fogDrawing || fogRevealed) return;
+                    onMove(event);
+                }, { passive: false });
+
+                fogCanvas.addEventListener('touchend', onEnd);
+            }
+
+            function openTaskPanel() {
+                taskPanel.setAttribute('aria-hidden', 'false');
+                taskPanel.classList.add('open');
+
+                // 若已完成，直接展示结果与关闭按钮
+                if (taskCompleted) {
+                    fogCanvas.style.transition = '';
+                    fogCanvas.style.opacity = '0';
+                    fogCanvas.style.visibility = 'hidden';
+                    fogHint.classList.add('hidden');
+                    closeTask.classList.add('visible');
+                    return;
+                }
+
+                fogRevealed = false;
+                fogDrawing = false;
+                closeTask.classList.remove('visible');
+                fogCanvas.style.transition = '';
+                fogCanvas.style.opacity = '1';
+                fogCanvas.style.visibility = 'visible';
+                fogHint.classList.remove('hidden');
+                initFogCanvas();
+            }
+
+            function closeTaskPanel() {
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.task = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openFieldPhotoPanel() {
+                fieldPhotoPanel.setAttribute('aria-hidden', 'false');
+                fieldPhotoPanel.classList.add('open');
+            }
+
+            function closeFieldPhotoPanel() {
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.fieldPhoto = true;
+                checkAllPanelsCompleted();
+            }
+
+            btnReadLog.addEventListener('click', openDiary);
+            closeDiary.addEventListener('click', closeDiaryPanel);
+            if (conchImage) conchImage.addEventListener('click', onConchClick);
+            btnCheckStatus.addEventListener('click', openStatusPanel);
+            closeStatus.addEventListener('click', closeStatusPanel);
+            btnTodo.addEventListener('click', openTaskPanel);
+            closeTask.addEventListener('click', closeTaskPanel);
+            btnFieldPhotos.addEventListener('click', openFieldPhotoPanel);
+            closeFieldPhoto.addEventListener('click', closeFieldPhotoPanel);
+            nextChapterBtn.addEventListener('click', function () {
+                window.location.href = 'chapter3.html';
+            });
+
+            bindFogEvents();
+        })();
+    </script>
+    <script src="js/progress-bar.js"></script>
+    <script src="js/global-music.js"></script>
+</body>
+</html>
+
+
+
+

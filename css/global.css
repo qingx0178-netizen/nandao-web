@@ -1,0 +1,64 @@
+/* 全局放大镜光标 —— 考古探索主题 */
+html,
+body,
+*:not(.puzzle-piece) {
+    cursor: url('../images/magnifier-cursor.svg') 12 12, auto !important;
+}
+
+/* 拼图碎片需要独立的 grab/grabbing 光标，以便 HTML5 drag-and-drop 正常工作 */
+.puzzle-piece {
+    cursor: grab;
+}
+
+.puzzle-piece.dragging {
+    cursor: grabbing;
+}
+
+/* 全局背景音乐开关 —— 仅在首页显示 */
+.music-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 200;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(117, 104, 91, 0.35);
+    border-radius: 50%;
+    background: rgba(250, 248, 242, 0.8);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    color: #75685B;
+    pointer-events: auto;
+    transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+    animation: music-toggle-fade-in 0.8s ease-out 0.5s forwards;
+}
+
+.music-toggle:hover,
+.music-toggle:focus {
+    color: #5C4F45;
+    border-color: rgba(117, 104, 91, 0.55);
+    background: rgba(250, 248, 242, 0.95);
+}
+
+.music-toggle svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+    pointer-events: none;
+}
+
+@keyframes music-toggle-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

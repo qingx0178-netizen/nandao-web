@@ -1,0 +1,1383 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第四章：对岸——探索</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/progress-bar.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            background-image: url('assets/images/交互背景2.jpg');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+        }
+
+        /* 探索页面舞台 */
+        .explore-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 日记本内页 */
+        .diary-page {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: min(72vw, 820px);
+            max-height: 76vh;
+            padding: 5vh 5vw;
+            overflow-y: auto;
+            background-color: #F7F4EC;
+            background-image: url('assets/第一章/纸页.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            border-radius: 3px;
+            box-shadow:
+                0 8px 36px rgba(0, 0, 0, 0.14),
+                0 0 0 1px rgba(117, 104, 91, 0.12),
+                inset 0 0 80px rgba(160, 150, 130, 0.12);
+            z-index: 40;
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -50%) scale(0.96);
+            transition: opacity 0.6s ease, visibility 0.6s ease, transform 0.6s ease;
+        }
+
+        .diary-page.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .diary-page::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
+            left: 20px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .diary-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .diary-text p {
+            margin-bottom: 1.6em;
+            text-indent: 2em;
+        }
+
+        .diary-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 2em;
+            color: #5C5348;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .diary-page::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .diary-page::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .diary-page::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        /* 关闭日记 */
+        .close-diary {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.7em 1.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-decoration: none;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-diary.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-diary:hover,
+        .close-diary:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        /* 纪念物伴手礼展示 */
+        .souvenir-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2.5em;
+        }
+
+        .souvenir-image,
+        .souvenir-caption {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .souvenir-image.visible,
+        .souvenir-caption.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .souvenir-image {
+            width: min(140px, 32vw);
+            height: auto;
+        }
+
+        .souvenir-caption {
+            margin-top: 1em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+            letter-spacing: 0.08em;
+            line-height: 1.8;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        /* 底部交互面板 */
+        .bottom-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: clamp(16px, 4vw, 48px);
+            padding: 0 5vw 6vh;
+            z-index: 5;
+            opacity: 0;
+            animation: panelFadeIn 1.2s ease-out 0.4s forwards;
+        }
+
+        @keyframes panelFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 状态图片展示面板 */
+        .status-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .status-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .status-content {
+            position: relative;
+            width: min(78vw, 960px);
+            height: min(78vh, 680px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .status-panel.open .status-content {
+            transform: scale(1);
+        }
+
+        .status-image {
+            width: 100%;
+            height: calc(100% - 60px);
+            object-fit: fill;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .close-status {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-status:hover,
+        .close-status:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 任务面板（识别闽台同源佐证） */
+        .task-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .task-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .task-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 0;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .task-panel.open .task-content {
+            transform: scale(1);
+        }
+
+        .task-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5vh 5vw;
+            scrollbar-width: thin;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 任务面板台湾地图底图 */
+        .task-map-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('assets/images/台湾地图.png') center center no-repeat;
+            background-size: contain;
+            opacity: 0.55;
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .task-map-bg.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .task-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .task-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .task-scroll::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        .task-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+        }
+
+        .task-text p {
+            margin-bottom: 1.4em;
+            text-indent: 2em;
+        }
+
+        .task-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 1.8em;
+            color: #5C5348;
+        }
+
+        .task-image {
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            display: block;
+            margin: 1em 0 0;
+            border-radius: 2px;
+        }
+
+        .task-image-caption {
+            text-align: center;
+            font-size: 0.85em;
+            color: #75685B;
+            margin-top: 0.6em;
+            letter-spacing: 0.1em;
+        }
+
+        .close-task {
+            display: block;
+            width: fit-content;
+            margin: 2em auto 0;
+            padding: 0.7em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-task.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-task:hover,
+        .close-task:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 识别闽台同源佐证游戏区域 */
+        .evidence-game-phase {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100%;
+            padding: 3vh 0;
+        }
+
+        .evidence-game-hint {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2.2vw, 1.4rem);
+            letter-spacing: 0.35em;
+            color: #6B6055;
+            margin-bottom: 1.5em;
+            text-align: center;
+        }
+
+        .evidence-text {
+            width: 100%;
+            max-width: 760px;
+            padding: 2em 2.2em;
+            margin-bottom: 2em;
+            background: rgba(255, 255, 255, 0.35);
+            border: 1px solid rgba(117, 104, 91, 0.16);
+            border-radius: 2px;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+            text-align: justify;
+        }
+
+        .evidence-text p {
+            margin-bottom: 1.2em;
+            text-indent: 2em;
+        }
+
+        .evidence-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 1.4em;
+            color: #5C5348;
+        }
+
+        .text-blank {
+            display: inline-block;
+            min-width: 6em;
+            height: 1.9em;
+            margin: 0 0.25em;
+            padding: 0 0.4em;
+            background: rgba(255, 255, 255, 0.55);
+            border-bottom: 2px solid rgba(117, 104, 91, 0.45);
+            color: #75685B;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 1.9em;
+            transition: all 0.3s ease;
+        }
+
+        .text-blank.drag-over {
+            background: rgba(117, 104, 91, 0.15);
+            border-bottom-color: rgba(117, 104, 91, 0.75);
+        }
+
+        .text-blank.filled {
+            background: transparent;
+            border-bottom-color: transparent;
+            color: #3D352C;
+        }
+
+        .word-cards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1em;
+            max-width: 760px;
+        }
+
+        .word-card {
+            position: relative;
+            padding: 0.75em 1.3em;
+            background: rgba(250, 248, 242, 0.82);
+            border: 1px solid rgba(117, 104, 91, 0.42);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+            cursor: grab;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.4vw, 1rem);
+            letter-spacing: 0.08em;
+            color: #5C5348;
+            text-align: center;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.3s ease;
+            -webkit-user-drag: element;
+        }
+
+        .word-card::before,
+        .word-card::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-color: rgba(117, 104, 91, 0.5);
+            border-style: solid;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .word-card::before {
+            top: 3px;
+            left: 3px;
+            border-width: 1px 0 0 1px;
+        }
+
+        .word-card::after {
+            bottom: 3px;
+            right: 3px;
+            border-width: 0 1px 1px 0;
+        }
+
+        .word-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .word-card.dragging {
+            opacity: 0.55;
+            cursor: grabbing;
+        }
+
+        .word-card.selected {
+            box-shadow: 0 0 0 2px rgba(117, 104, 91, 0.55), 0 5px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .word-card.placed {
+            cursor: default;
+            opacity: 0.35;
+            pointer-events: none;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .task-result {
+            display: none;
+        }
+
+        /* 科考实拍展示面板 */
+        .field-photo-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .field-photo-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .field-photo-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .field-photo-panel.open .field-photo-content {
+            transform: scale(1);
+        }
+
+        .field-photo-image {
+            width: 100%;
+            height: calc(100% - 110px);
+            object-fit: contain;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .field-photo-caption {
+            margin-top: 14px;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.12em;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        .close-field-photo {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-field-photo:hover,
+        .close-field-photo:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 章节推进纸条 */
+        .advance-note {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.48);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .advance-note.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .advance-note-content {
+            position: relative;
+            width: min(72vw, 620px);
+            padding: 6vh 6vw;
+            background:
+                linear-gradient(to bottom, #F5F0E3, #EDE8DC);
+            background-size: cover;
+            border-radius: 2px;
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.18),
+                0 0 0 1px rgba(117, 104, 91, 0.15),
+                inset 0 0 50px rgba(160, 150, 130, 0.1);
+            transform: scale(0.96) rotate(-1deg);
+            transition: transform 0.6s ease;
+        }
+
+        .advance-note.open .advance-note-content {
+            transform: scale(1) rotate(-0.5deg);
+        }
+
+        .advance-note-content::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            bottom: 16px;
+            left: 16px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .advance-note-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2vw, 1.35rem);
+            line-height: 2.2;
+            letter-spacing: 0.06em;
+            color: #3D352C;
+            text-align: center;
+            min-height: 4em;
+        }
+
+        .advance-note-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        .next-chapter-btn {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.75em 2em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.32);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .next-chapter-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .next-chapter-btn:hover,
+        .next-chapter-btn:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 卷轴入口 */
+        .scroll-entry {
+            position: relative;
+            flex: 1;
+            max-width: 220px;
+            padding: 1.1em 0.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.8rem, 1.4vw, 1rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            background: linear-gradient(to right, #E2D9C4 0%, #F5F0E3 12%, #F5F0E3 88%, #E2D9C4 100%);
+            border: 1px solid rgba(117, 104, 91, 0.32);
+            border-radius: 3px;
+            box-shadow:
+                0 4px 14px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+        }
+
+        .scroll-entry::before,
+        .scroll-entry::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            width: 14px;
+            height: calc(100% + 2px);
+            background: linear-gradient(to bottom, #C9BEA8, #DDD5C2 40%, #DDD5C2 60%, #C9BEA8);
+            border: 1px solid rgba(117, 104, 91, 0.35);
+            border-radius: 2px;
+            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.06);
+            pointer-events: none;
+        }
+
+        .scroll-entry::before {
+            left: -8px;
+        }
+
+        .scroll-entry::after {
+            right: -8px;
+        }
+
+        .scroll-entry:hover,
+        .scroll-entry:focus {
+            color: #3D352C;
+            background: linear-gradient(to right, #DDD5C2 0%, #FAF8F0 12%, #FAF8F0 88%, #DDD5C2 100%);
+            transform: translateY(-4px);
+            box-shadow:
+                0 8px 22px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+    </style>
+</head>
+<body>
+    <div class="explore-stage">
+        <!-- 日记本内页 -->
+        <article class="diary-page" id="diary-page" aria-hidden="true">
+            <div class="diary-text" id="diary-text"></div>
+            <div class="souvenir-section" id="souvenir-section">
+                <img class="souvenir-image" id="souvenir-image" src="assets/第四章/伴手礼.png" alt="伴手礼">
+                <div class="souvenir-caption" id="souvenir-caption">解锁纪念物：一份来自台湾的伴手礼</div>
+            </div>
+            <a class="close-diary" id="close-diary" aria-label="关闭日记">关闭日记</a>
+        </article>
+
+        <!-- 状态图片展示面板 -->
+        <div class="status-panel" id="status-panel" aria-hidden="true">
+            <div class="status-content">
+                <img class="status-image" id="status-image" src="assets/images/状态4.jpg" alt="状态查看">
+                <button class="close-status" id="close-status" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 任务面板（识别闽台同源佐证） -->
+        <div class="task-panel" id="task-panel" aria-hidden="true">
+            <div class="task-content" id="task-content">
+                <div class="task-map-bg" id="task-map-bg"></div>
+                <div class="task-scroll" id="task-scroll">
+                    <div class="evidence-game-phase" id="evidence-game-phase">
+                        <div class="evidence-game-hint">识别闽台同源佐证</div>
+                        <div class="evidence-text" id="evidence-text">
+                            <p>闽台同源佐证：</p>
+                            <p><span class="text-blank" data-answer="大坌坑文化"></span>与壳丘头文化内涵高度相似，二者都是<span class="text-blank" data-answer="贝丘遗址"></span>,<span class="text-blank" data-answer="渔猎经济"></span>为其主要的生计模式，最能体现其相似性的是<span class="text-blank" data-answer="陶器的装饰纹饰"></span>，口沿处的刻划纹，腹部的贝齿纹、波浪纹、指甲纹等为其普遍共性特征。西营、壳丘头遗址出土人骨的碳十四测年结果表明，平潭史前人群与中国南方及东南亚族群存在较为密切的遗传联系。植物考古学的证据从另一个维度印证了闽台迁徙链，水稻和粟等作物在距今4800至4600年间传入台湾地区，为南岛语族早期人群自福建沿海向台湾扩散提供了有力证据。</p>
+                        </div>
+                        <div class="word-cards" id="word-cards"></div>
+                    </div>
+                    <div class="task-result" id="task-result">
+                        <div class="task-text" id="task-text">
+                            <p>闽台同源佐证：</p>
+                            <p>大坌坑文化与壳丘头文化内涵高度相似，二者都是贝丘遗址,渔猎经济为其主要的生计模式，最能体现其相似性的是陶器的装饰纹饰，口沿处的刻划纹，腹部的贝齿纹、波浪纹、指甲纹等为其普遍共性特征。西营、壳丘头遗址出土人骨的碳十四测年结果表明，平潭史前人群与中国南方及东南亚族群存在较为密切的遗传联系。植物考古学的证据从另一个维度印证了闽台迁徙链，水稻和粟等作物在距今4800至4600年间传入台湾地区，为南岛语族早期人群自福建沿海向台湾扩散提供了有力证据。</p>
+                            <img class="task-image" src="assets/images/两岸相连.png" alt="两岸相连">
+                            <div class="task-image-caption">两岸相连</div>
+                        </div>
+                        <button class="close-task" id="close-task" type="button">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 科考实拍展示面板 -->
+        <div class="field-photo-panel" id="field-photo-panel" aria-hidden="true">
+            <div class="field-photo-content">
+                <img class="field-photo-image" src="assets/第四章/科考实拍4.jpg" alt="科考实拍">
+                <div class="field-photo-caption">拍摄于11月3日，印证两岸同源。</div>
+                <button class="close-field-photo" id="close-field-photo" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 章节推进纸条 -->
+        <div class="advance-note" id="advance-note" aria-hidden="true">
+            <div class="advance-note-content">
+                <div class="advance-note-text" id="advance-note-text"></div>
+                <button class="next-chapter-btn" id="next-chapter-btn" type="button">阅读下一章节</button>
+            </div>
+        </div>
+
+        <!-- 底部交互面板 -->
+        <nav class="bottom-panel" id="bottom-panel">
+            <button class="scroll-entry" id="btn-read-log" type="button">阅读日志</button>
+            <button class="scroll-entry" id="btn-check-status" type="button">查看状态</button>
+            <button class="scroll-entry" id="btn-todo" type="button">待办任务</button>
+            <button class="scroll-entry" id="btn-field-photos" type="button">科考实拍</button>
+        </nav>
+    </div>
+
+    <script>
+        (function () {
+            const diaryPage = document.getElementById('diary-page');
+            const diaryText = document.getElementById('diary-text');
+            const closeDiary = document.getElementById('close-diary');
+            const souvenirSection = document.getElementById('souvenir-section');
+            const souvenirImage = document.getElementById('souvenir-image');
+            const souvenirCaption = document.getElementById('souvenir-caption');
+            const statusPanel = document.getElementById('status-panel');
+            const closeStatus = document.getElementById('close-status');
+            const taskPanel = document.getElementById('task-panel');
+            const taskContent = document.getElementById('task-content');
+            const closeTask = document.getElementById('close-task');
+            const fieldPhotoPanel = document.getElementById('field-photo-panel');
+            const closeFieldPhoto = document.getElementById('close-field-photo');
+            const advanceNote = document.getElementById('advance-note');
+            const advanceNoteText = document.getElementById('advance-note-text');
+            const nextChapterBtn = document.getElementById('next-chapter-btn');
+            const btnReadLog = document.getElementById('btn-read-log');
+            const btnCheckStatus = document.getElementById('btn-check-status');
+            const btnTodo = document.getElementById('btn-todo');
+            const btnFieldPhotos = document.getElementById('btn-field-photos');
+
+            const taskMapBg = document.getElementById('task-map-bg');
+
+            const paragraphs = [
+                '日期：11月3日  天气：晴',
+                '今天收到了一份意料之外的邮件。一位在台东从事考古的同行，看到我们团队发布的成果简报，主动发来了一组他们遗址出土陶片的照片和拓片。',
+                '我感到奇妙，我们的那枚陶片来自平潭壳丘头遗址，他们的来自台湾大坌坑遗址，但波浪纹的制式，却有着一脉相承的熟悉感。',
+                '傍晚，我一个人走到海边。我看向海的对岸，什么也没看见，但我知道，我们从未真正分隔过。'
+            ];
+
+            const baseSpeed = 52;
+            const pauseAfterComma = 120;
+            const pauseAfterPeriod = 280;
+            const pauseBetweenParagraphs = 500;
+
+            let pIndex = 0;
+            let cIndex = 0;
+            let currentP = null;
+            let hasTyped = false;
+            let isTyping = false;
+            let diaryTypingActive = false;
+            let souvenirTimer = null;
+
+            bindSouvenirTransitions();
+
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+
+            function resetDiary() {
+                diaryText.innerHTML = '';
+                pIndex = 0;
+                cIndex = 0;
+                currentP = null;
+            }
+
+            function startParagraph() {
+                currentP = document.createElement('p');
+                diaryText.appendChild(currentP);
+                cIndex = 0;
+            }
+
+            function getDelay(char) {
+                if ('，、'.includes(char)) return pauseAfterComma;
+                if ('。！？'.includes(char)) return pauseAfterPeriod;
+                return baseSpeed;
+            }
+
+            let typingAudio = null;
+
+            function initTypingAudio() {
+                if (!typingAudio) {
+                    typingAudio = new Audio('assets/第一章/打字音效.mp3');
+                    typingAudio.preload = 'auto';
+                    typingAudio.loop = true;
+                    typingAudio.volume = 0.42;
+                }
+            }
+
+            function startTypingSound() {
+                initTypingAudio();
+                if (!typingAudio) return;
+                typingAudio.currentTime = 0;
+                typingAudio.play().catch(function () {});
+            }
+
+            function stopTypingSound() {
+                if (!typingAudio) return;
+                typingAudio.pause();
+                typingAudio.currentTime = 0;
+            }
+
+            function showSouvenirImage() {
+                if (souvenirImage) souvenirImage.classList.add('visible');
+            }
+
+            function showSouvenirCaption() {
+                if (souvenirCaption) souvenirCaption.classList.add('visible');
+            }
+
+            function hideSouvenirSection() {
+                if (souvenirImage) souvenirImage.classList.remove('visible');
+                if (souvenirCaption) souvenirCaption.classList.remove('visible');
+                if (souvenirTimer) {
+                    clearTimeout(souvenirTimer);
+                    souvenirTimer = null;
+                }
+            }
+
+            function showCloseDiaryHint() {
+                souvenirTimer = setTimeout(function () {
+                    if (!diaryPage.classList.contains('open')) return;
+                    closeDiary.classList.add('visible');
+                }, 500);
+            }
+
+            function bindSouvenirTransitions() {
+                if (souvenirImage) {
+                    souvenirImage.addEventListener('transitionend', function (e) {
+                        if (e.propertyName === 'opacity' && souvenirImage.classList.contains('visible')) {
+                            showSouvenirCaption();
+                        }
+                    });
+                }
+                if (souvenirCaption) {
+                    souvenirCaption.addEventListener('transitionend', function (e) {
+                        if (e.propertyName === 'opacity' && souvenirCaption.classList.contains('visible')) {
+                            showCloseDiaryHint();
+                        }
+                    });
+                }
+            }
+
+            function typeNext() {
+                if (!diaryTypingActive) return;
+                if (pIndex >= paragraphs.length) {
+                    if (!diaryTypingActive) return;
+                    isTyping = false;
+                    hasTyped = true;
+                    stopTypingSound();
+                    cursor.style.animationIterationCount = '3';
+                    setTimeout(function () {
+                        if (!diaryTypingActive) return;
+                        cursor.style.opacity = '0';
+                        showSouvenirImage();
+                    }, 400);
+                    return;
+                }
+
+                if (currentP === null) {
+                    startParagraph();
+                }
+
+                const text = paragraphs[pIndex];
+                if (cIndex < text.length) {
+                    const char = text[cIndex];
+                    currentP.textContent += char;
+                    cIndex++;
+                    currentP.appendChild(cursor);
+                    setTimeout(typeNext, getDelay(char));
+                } else {
+                    pIndex++;
+                    currentP = null;
+                    if (pIndex < paragraphs.length) {
+                        setTimeout(typeNext, pauseBetweenParagraphs);
+                    } else {
+                        typeNext();
+                    }
+                }
+            }
+
+            function openDiary() {
+                // 关闭其他可能遮挡日记的弹窗（不标记完成状态）
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+
+                diaryPage.setAttribute('aria-hidden', 'false');
+                diaryPage.classList.add('open');
+
+                if (!hasTyped) {
+                    resetDiary();
+                    hideSouvenirSection();
+                    closeDiary.classList.remove('visible');
+                    diaryTypingActive = true;
+                    isTyping = true;
+                    startTypingSound();
+                    setTimeout(typeNext, 300);
+                } else {
+                    // 已经阅读过，直接显示纪念物与关闭提示
+                    diaryTypingActive = true;
+                    showSouvenirImage();
+                    showSouvenirCaption();
+                    closeDiary.classList.add('visible');
+                }
+            }
+
+            const panelCompleted = {
+                log: false,
+                status: false,
+                task: false,
+                fieldPhoto: false
+            };
+            let advanceNoteShown = false;
+
+            function checkAllPanelsCompleted() {
+                if (advanceNoteShown) return;
+                const allCompleted = panelCompleted.log && panelCompleted.status &&
+                                     panelCompleted.task && panelCompleted.fieldPhoto;
+                if (allCompleted) {
+                    advanceNoteShown = true;
+                    setTimeout(showAdvanceNote, 400);
+                }
+            }
+
+            function showAdvanceNote() {
+                advanceNote.setAttribute('aria-hidden', 'false');
+                advanceNote.classList.add('open');
+                typeAdvanceNote();
+            }
+
+            function typeAdvanceNote() {
+                const text = '海峡虽窄，海水会连通两岸，像陶片的纹路从这头延伸到那头，没有断裂。';
+                advanceNoteText.innerHTML = '';
+                let index = 0;
+                const cursor = document.createElement('span');
+                cursor.className = 'advance-note-cursor';
+
+                function typeChar() {
+                    if (index < text.length) {
+                        advanceNoteText.textContent += text[index];
+                        index++;
+                        advanceNoteText.appendChild(cursor);
+                        setTimeout(typeChar, 70);
+                    } else {
+                        stopTypingSound();
+                        cursor.style.animationIterationCount = '3';
+                        setTimeout(function () {
+                            cursor.style.opacity = '0';
+                            nextChapterBtn.classList.add('visible');
+                        }, 500);
+                    }
+                }
+
+                startTypingSound();
+                setTimeout(typeChar, 400);
+            }
+
+            function closeDiaryPanel() {
+                diaryPage.classList.remove('open');
+                diaryPage.setAttribute('aria-hidden', 'true');
+                closeDiary.classList.remove('visible');
+                stopTypingSound();
+                if (souvenirTimer) {
+                    clearTimeout(souvenirTimer);
+                    souvenirTimer = null;
+                }
+                hideSouvenirSection();
+                panelCompleted.log = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openStatusPanel() {
+                statusPanel.setAttribute('aria-hidden', 'false');
+                statusPanel.classList.add('open');
+            }
+
+            function closeStatusPanel() {
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.status = true;
+                checkAllPanelsCompleted();
+            }
+
+            // 识别闽台同源佐证小游戏
+            const evidenceText = document.getElementById('evidence-text');
+            const evidenceGamePhase = document.getElementById('evidence-game-phase');
+            const wordCardsContainer = document.getElementById('word-cards');
+            const taskResult = document.getElementById('task-result');
+            const blanks = evidenceText ? evidenceText.querySelectorAll('.text-blank') : [];
+            let draggedCard = null;
+            let selectedCard = null;
+            let filledCount = 0;
+
+            const phrases = ['大坌坑文化', '贝丘遗址', '渔猎经济', '陶器的装饰纹饰'];
+
+            function createWordCard(phrase) {
+                const card = document.createElement('div');
+                card.className = 'word-card';
+                card.dataset.phrase = phrase;
+                card.draggable = true;
+                card.textContent = phrase;
+
+                card.addEventListener('dragstart', handleCardDragStart);
+                card.addEventListener('dragend', handleCardDragEnd);
+                card.addEventListener('click', handleCardClick);
+
+                return card;
+            }
+
+            function initEvidenceGame() {
+                if (!wordCardsContainer || !evidenceText) return;
+                wordCardsContainer.innerHTML = '';
+                evidenceText.querySelectorAll('.text-blank').forEach(function (blank) {
+                    blank.textContent = '';
+                    blank.classList.remove('filled', 'drag-over');
+                });
+                draggedCard = null;
+                selectedCard = null;
+                filledCount = 0;
+
+                // 重置视图：显示游戏区，隐藏结果区
+                if (evidenceGamePhase) evidenceGamePhase.style.display = 'flex';
+                if (taskResult) taskResult.style.display = 'none';
+
+                // 显示台湾地图底图
+                if (taskMapBg) taskMapBg.classList.remove('hidden');
+
+                const shuffled = phrases.slice().sort(function () { return Math.random() - 0.5; });
+                shuffled.forEach(function (phrase) {
+                    wordCardsContainer.appendChild(createWordCard(phrase));
+                });
+
+                blanks.forEach(function (blank) {
+                    blank.addEventListener('dragover', handleBlankDragOver);
+                    blank.addEventListener('drop', handleBlankDrop);
+                    blank.addEventListener('dragenter', handleBlankDragEnter);
+                    blank.addEventListener('dragleave', handleBlankDragLeave);
+                    blank.addEventListener('click', handleBlankClick);
+                });
+            }
+
+            function handleCardDragStart(event) {
+                draggedCard = this;
+                this.classList.add('dragging');
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', this.dataset.phrase);
+            }
+
+            function handleCardDragEnd() {
+                this.classList.remove('dragging');
+                draggedCard = null;
+            }
+
+            function handleBlankDragOver(event) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+            }
+
+            function handleBlankDragEnter(event) {
+                event.preventDefault();
+                this.classList.add('drag-over');
+            }
+
+            function handleBlankDragLeave() {
+                this.classList.remove('drag-over');
+            }
+
+            function handleBlankDrop(event) {
+                event.preventDefault();
+                this.classList.remove('drag-over');
+                if (!draggedCard) return;
+                placeCard(draggedCard, this);
+            }
+
+            function handleCardClick() {
+                if (this.classList.contains('placed')) return;
+
+                if (selectedCard === this) {
+                    this.classList.remove('selected');
+                    selectedCard = null;
+                    return;
+                }
+
+                if (selectedCard) {
+                    selectedCard.classList.remove('selected');
+                }
+
+                this.classList.add('selected');
+                selectedCard = this;
+            }
+
+            function handleBlankClick() {
+                if (!selectedCard || this.classList.contains('filled')) return;
+                placeCard(selectedCard, this);
+                selectedCard.classList.remove('selected');
+                selectedCard = null;
+            }
+
+            function placeCard(card, blank) {
+                const phrase = card.dataset.phrase;
+                const answer = blank.dataset.answer;
+
+                if (phrase !== answer) return;
+
+                blank.textContent = phrase;
+                blank.classList.add('filled');
+                card.classList.add('placed');
+                card.draggable = false;
+                filledCount++;
+
+                if (filledCount === blanks.length) {
+                    setTimeout(showTaskResult, 500);
+                }
+            }
+
+            function showTaskResult() {
+                if (evidenceGamePhase) evidenceGamePhase.style.display = 'none';
+                if (taskResult) {
+                    taskResult.style.display = 'block';
+                    closeTask.classList.add('visible');
+                }
+                // 交互完成后隐藏台湾地图底图
+                if (taskMapBg) taskMapBg.classList.add('hidden');
+            }
+
+            function openTaskPanel() {
+                taskPanel.setAttribute('aria-hidden', 'false');
+                taskPanel.classList.add('open');
+
+                // 若已完成，直接展示结果与关闭按钮
+                if (filledCount === blanks.length) {
+                    if (evidenceGamePhase) evidenceGamePhase.style.display = 'none';
+                    if (taskResult) taskResult.style.display = 'block';
+                    closeTask.classList.add('visible');
+                    if (taskMapBg) taskMapBg.classList.add('hidden');
+                    return;
+                }
+
+                closeTask.classList.remove('visible');
+                initEvidenceGame();
+            }
+
+            function closeTaskPanel() {
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.task = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openFieldPhotoPanel() {
+                fieldPhotoPanel.setAttribute('aria-hidden', 'false');
+                fieldPhotoPanel.classList.add('open');
+            }
+
+            function closeFieldPhotoPanel() {
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.fieldPhoto = true;
+                checkAllPanelsCompleted();
+            }
+
+            btnReadLog.addEventListener('click', openDiary);
+            closeDiary.addEventListener('click', closeDiaryPanel);
+            btnCheckStatus.addEventListener('click', openStatusPanel);
+            closeStatus.addEventListener('click', closeStatusPanel);
+            btnTodo.addEventListener('click', openTaskPanel);
+            closeTask.addEventListener('click', closeTaskPanel);
+            btnFieldPhotos.addEventListener('click', openFieldPhotoPanel);
+            closeFieldPhoto.addEventListener('click', closeFieldPhotoPanel);
+            nextChapterBtn.addEventListener('click', function () {
+                window.location.href = 'chapter9.html';
+            });
+        })();
+    </script>
+    <script src="js/progress-bar.js"></script>
+    <script src="js/global-music.js"></script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,328 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第四章：对岸——海屿寻踪</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'ChiBiFuTi';
+            src: url('assets/fonts/赤壁赋体.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+        }
+
+        .chapter-hero {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            background-image: url('assets/images/第一章，导读页.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            overflow: hidden;
+        }
+
+        /* 东方云纹装饰层 */
+        .cloud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            display: flex;
+            z-index: 2;
+            opacity: 0.35;
+            pointer-events: none;
+            animation: cloudDrift 80s linear infinite;
+        }
+
+        .cloud-layer img {
+            width: 50%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        @keyframes cloudDrift {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* 标题容器 */
+        .chapter-title-wrap {
+            position: absolute;
+            top: 44%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+            padding: 0 20px;
+            pointer-events: none;
+        }
+
+        .chapter-title {
+            font-family: "ChiBiFuTi", "Ma Shan Zheng", "Zhi Mang Xiang", "STXingkai", "Xingkai SC", "KaiTi", "楷体", cursive, serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            letter-spacing: 0.32em;
+            font-weight: 400;
+            line-height: 1.4;
+            color: #75685B;
+            white-space: nowrap;
+        }
+
+        /* 预加载模式：翻页过程中隐藏文字和入口，仅保留背景 */
+        .preload .chapter-title,
+        .preload .start-reading {
+            opacity: 0;
+            animation: none;
+        }
+
+        /* 逐字浮现动画 */
+        .title-char {
+            display: inline-block;
+            opacity: 0;
+            will-change: opacity, transform;
+            animation: chapterCharEmergence 1.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+
+        @keyframes chapterCharEmergence {
+            0% {
+                opacity: 0;
+                transform: translateY(22px) scale(0.96);
+            }
+            60% {
+                opacity: 0.85;
+                transform: translateY(3px) scale(1.01);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* 开启阅读入口 */
+        .start-reading {
+            position: absolute;
+            top: 62%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.6vw, 1.1rem);
+            letter-spacing: 0.32em;
+            color: #75685B;
+            text-decoration: none;
+            cursor: pointer;
+            opacity: 0;
+            padding: 0.95em 2.2em;
+            background: transparent;
+            border: none;
+            animation:
+                reading-fade-in 1.2s ease-out 2.8s forwards,
+                reading-breathe 3s ease-in-out 4s infinite;
+            transition: color 0.3s ease, filter 0.3s ease;
+        }
+
+        .start-reading:hover,
+        .start-reading:focus {
+            color: #5C4F45;
+            filter: brightness(1.05);
+        }
+
+        .start-reading::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 130%;
+            height: 260%;
+            background: transparent url('assets/images/贝壳边框.png') center center no-repeat;
+            background-size: 100% 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .start-reading .corner {
+            display: none;
+        }
+
+        /* 四角简约东方纹样 */
+        .corner {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+        }
+
+        .corner::before,
+        .corner::after {
+            content: '';
+            position: absolute;
+            background: #75685B;
+        }
+
+        .corner-tl {
+            top: -1px;
+            left: -1px;
+        }
+        .corner-tl::before {
+            top: 0;
+            left: 0;
+            width: 14px;
+            height: 2px;
+        }
+        .corner-tl::after {
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 14px;
+        }
+
+        .corner-tr {
+            top: -1px;
+            right: -1px;
+        }
+        .corner-tr::before {
+            top: 0;
+            right: 0;
+            width: 14px;
+            height: 2px;
+        }
+        .corner-tr::after {
+            top: 0;
+            right: 0;
+            width: 2px;
+            height: 14px;
+        }
+
+        .corner-bl {
+            bottom: -1px;
+            left: -1px;
+        }
+        .corner-bl::before {
+            bottom: 0;
+            left: 0;
+            width: 14px;
+            height: 2px;
+        }
+        .corner-bl::after {
+            bottom: 0;
+            left: 0;
+            width: 2px;
+            height: 14px;
+        }
+
+        .corner-br {
+            bottom: -1px;
+            right: -1px;
+        }
+        .corner-br::before {
+            bottom: 0;
+            right: 0;
+            width: 14px;
+            height: 2px;
+        }
+        .corner-br::after {
+            bottom: 0;
+            right: 0;
+            width: 2px;
+            height: 14px;
+        }
+
+        @keyframes reading-fade-in {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        @keyframes reading-breathe {
+            0%, 100% {
+                opacity: 0.76;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chapter-hero">
+        <div class="cloud-layer" aria-hidden="true">
+            <img src="assets/images/云纹.png" alt="">
+            <img src="assets/images/云纹.png" alt="">
+        </div>
+
+        <div class="chapter-title-wrap">
+            <h1 class="chapter-title">第四章：对岸</h1>
+        </div>
+
+        <a href="chapter8.html" class="start-reading" aria-label="开启阅读">
+            <span class="corner corner-tl"></span>
+            <span class="corner corner-tr"></span>
+            <span class="corner corner-bl"></span>
+            <span class="corner corner-br"></span>
+            开启阅读
+        </a>
+    </div>
+
+    <script>
+        // 标题逐字缓慢浮现
+        function splitTitle(element, baseDelay, stagger) {
+            const text = element.textContent.trim();
+            element.innerHTML = '';
+            [...text].forEach((char, index) => {
+                if (char === ' ') return;
+                const span = document.createElement('span');
+                span.className = 'title-char';
+                span.textContent = char;
+                span.style.animationDelay = (baseDelay + index * stagger) + 's';
+                element.appendChild(span);
+            });
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const isPreload = params.get('preload') === '1';
+
+        if (isPreload) {
+            // 预加载模式：翻页过程中仅显示背景，隐藏文字与入口
+            document.body.classList.add('preload');
+        } else {
+            // 正常进入模式：播放标题浮现动画
+            splitTitle(document.querySelector('.chapter-title'), 0.4, 0.32);
+        }
+    </script>
+    <script src="js/global-music.js"></script>
+</body>
+</html>
+
+

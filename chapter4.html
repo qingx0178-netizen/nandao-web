@@ -1,0 +1,1400 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第二章：初遇——探索</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/progress-bar.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            background-image: url('assets/images/第一章交互背景.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+        }
+
+        /* 探索页面舞台 */
+        .explore-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 日记本内页 */
+        .diary-page {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: min(72vw, 820px);
+            max-height: 76vh;
+            padding: 5vh 5vw;
+            overflow-y: auto;
+            background-color: #F7F4EC;
+            background-image: url('assets/第一章/纸页.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            border-radius: 3px;
+            box-shadow:
+                0 8px 36px rgba(0, 0, 0, 0.14),
+                0 0 0 1px rgba(117, 104, 91, 0.12),
+                inset 0 0 80px rgba(160, 150, 130, 0.12);
+            z-index: 40;
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -50%) scale(0.96);
+            transition: opacity 0.6s ease, visibility 0.6s ease, transform 0.6s ease;
+        }
+
+        .diary-page.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .diary-page::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
+            left: 20px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .diary-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .diary-text p {
+            margin-bottom: 1.6em;
+            text-indent: 2em;
+        }
+
+        .diary-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 2em;
+            color: #5C5348;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .diary-page::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .diary-page::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .diary-page::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        /* 关闭日记 */
+        .close-diary {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.7em 1.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-decoration: none;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-diary.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-diary:hover,
+        .close-diary:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        /* 纪念物陶片展示 */
+        .souvenir-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2.5em;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .souvenir-section.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .souvenir-image {
+            width: min(140px, 32vw);
+            height: auto;
+        }
+
+        .souvenir-caption {
+            margin-top: 1em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+            letter-spacing: 0.08em;
+            line-height: 1.8;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        /* 底部交互面板 */
+        .bottom-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: clamp(16px, 4vw, 48px);
+            padding: 0 5vw 6vh;
+            z-index: 5;
+            opacity: 0;
+            animation: panelFadeIn 1.2s ease-out 0.4s forwards;
+        }
+
+        @keyframes panelFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 状态图片展示面板 */
+        .status-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .status-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .status-content {
+            position: relative;
+            width: min(78vw, 960px);
+            height: min(78vh, 680px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .status-panel.open .status-content {
+            transform: scale(1);
+        }
+
+        .status-image {
+            width: 100%;
+            height: calc(100% - 60px);
+            object-fit: fill;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .close-status {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-status:hover,
+        .close-status:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 任务面板（修复陶罐拼图小游戏） */
+        .task-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .task-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .task-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 0;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .task-panel.open .task-content {
+            transform: scale(1);
+        }
+
+        .task-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5vh 5vw;
+            scrollbar-width: thin;
+        }
+
+        .task-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .task-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .task-scroll::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        .task-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+        }
+
+        .task-text p {
+            margin-bottom: 1.4em;
+            text-indent: 2em;
+        }
+
+        .task-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 1.8em;
+            color: #5C5348;
+        }
+
+        .task-image {
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            display: block;
+            margin: 1em 0 0;
+            border-radius: 2px;
+        }
+
+        .task-image-caption {
+            text-align: center;
+            font-size: 0.85em;
+            color: #75685B;
+            margin-top: 0.6em;
+            letter-spacing: 0.1em;
+        }
+
+        .close-task {
+            display: block;
+            width: fit-content;
+            margin: 2em auto 0;
+            padding: 0.7em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-task.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-task:hover,
+        .close-task:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 拼图游戏区域 */
+        .puzzle-phase {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100%;
+            padding: 3vh 0;
+        }
+
+        .puzzle-hint {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2.2vw, 1.4rem);
+            letter-spacing: 0.35em;
+            color: #6B6055;
+            margin-bottom: 1.5em;
+            text-align: center;
+        }
+
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            width: min(60vw, 380px);
+            height: min(60vw, 380px);
+            border: 2px solid rgba(117, 104, 91, 0.35);
+            background: rgba(250, 248, 242, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .puzzle-slot {
+            position: relative;
+            border: 1px solid rgba(117, 104, 91, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .puzzle-slot.drag-over {
+            background: rgba(117, 104, 91, 0.12);
+        }
+
+        .puzzle-piece {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .puzzle-piece:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+        }
+
+        .puzzle-piece.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .puzzle-piece.selected {
+            box-shadow: inset 0 0 0 3px rgba(117, 104, 91, 0.65);
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        .task-result {
+            display: none;
+        }
+
+        /* 科考实拍展示面板 */
+        .field-photo-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .field-photo-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .field-photo-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .field-photo-panel.open .field-photo-content {
+            transform: scale(1);
+        }
+
+        .field-photo-image {
+            width: 100%;
+            height: calc(100% - 110px);
+            object-fit: contain;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .field-photo-caption {
+            margin-top: 14px;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.12em;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        .close-field-photo {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-field-photo:hover,
+        .close-field-photo:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 章节推进纸条 */
+        .advance-note {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.48);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .advance-note.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .advance-note-content {
+            position: relative;
+            width: min(72vw, 620px);
+            padding: 6vh 6vw;
+            background:
+                linear-gradient(to bottom, #F5F0E3, #EDE8DC);
+            background-size: cover;
+            border-radius: 2px;
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.18),
+                0 0 0 1px rgba(117, 104, 91, 0.15),
+                inset 0 0 50px rgba(160, 150, 130, 0.1);
+            transform: scale(0.96) rotate(-1deg);
+            transition: transform 0.6s ease;
+        }
+
+        .advance-note.open .advance-note-content {
+            transform: scale(1) rotate(-0.5deg);
+        }
+
+        .advance-note-content::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            bottom: 16px;
+            left: 16px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .advance-note-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2vw, 1.35rem);
+            line-height: 2.2;
+            letter-spacing: 0.06em;
+            color: #3D352C;
+            text-align: center;
+            min-height: 4em;
+        }
+
+        .advance-note-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        .next-chapter-btn {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.75em 2em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.32);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .next-chapter-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .next-chapter-btn:hover,
+        .next-chapter-btn:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 卷轴入口 */
+        .scroll-entry {
+            position: relative;
+            flex: 1;
+            max-width: 220px;
+            padding: 1.1em 0.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.8rem, 1.4vw, 1rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            background: linear-gradient(to right, #E2D9C4 0%, #F5F0E3 12%, #F5F0E3 88%, #E2D9C4 100%);
+            border: 1px solid rgba(117, 104, 91, 0.32);
+            border-radius: 3px;
+            box-shadow:
+                0 4px 14px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+        }
+
+        .scroll-entry::before,
+        .scroll-entry::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            width: 14px;
+            height: calc(100% + 2px);
+            background: linear-gradient(to bottom, #C9BEA8, #DDD5C2 40%, #DDD5C2 60%, #C9BEA8);
+            border: 1px solid rgba(117, 104, 91, 0.35);
+            border-radius: 2px;
+            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.06);
+            pointer-events: none;
+        }
+
+        .scroll-entry::before {
+            left: -8px;
+        }
+
+        .scroll-entry::after {
+            right: -8px;
+        }
+
+        .scroll-entry:hover,
+        .scroll-entry:focus {
+            color: #3D352C;
+            background: linear-gradient(to right, #DDD5C2 0%, #FAF8F0 12%, #FAF8F0 88%, #DDD5C2 100%);
+            transform: translateY(-4px);
+            box-shadow:
+                0 8px 22px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+    </style>
+</head>
+<body>
+    <div class="explore-stage">
+        <!-- 日记本内页 -->
+        <article class="diary-page" id="diary-page" aria-hidden="true">
+            <div class="diary-text" id="diary-text"></div>
+            <div class="souvenir-section" id="souvenir-section">
+                <img class="souvenir-image" id="souvenir-image" src="assets/第二章/平潭陶片.png" alt="陶片PT-01">
+                <div class="souvenir-caption">解锁纪念物：陶片PT-01</div>
+            </div>
+            <a class="close-diary" id="close-diary" aria-label="关闭日记">关闭日记</a>
+        </article>
+
+        <!-- 状态图片展示面板 -->
+        <div class="status-panel" id="status-panel" aria-hidden="true">
+            <div class="status-content">
+                <img class="status-image" id="status-image" src="assets/images/状态2.jpg" alt="状态查看">
+                <button class="close-status" id="close-status" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 任务面板（修复陶罐拼图小游戏） -->
+        <div class="task-panel" id="task-panel" aria-hidden="true">
+            <div class="task-content" id="task-content">
+                <div class="task-scroll" id="task-scroll">
+                    <div class="puzzle-phase" id="puzzle-phase">
+                        <div class="puzzle-hint">拖动碎片，修复陶罐</div>
+                        <div class="puzzle-board" id="puzzle-board"></div>
+                    </div>
+                    <div class="task-result" id="task-result">
+                        <div class="task-text" id="task-text">
+                            <p>先民生活的痕迹：</p>
+                            <p>壳丘头遗址群是一处典型的贝丘遗址，主要文化层堆积物中80%以上为贝壳，先民采集食用的贝类多达19种。与此同时，考古人员在西营、壳丘头遗址均发现了水稻遗存，这是目前中国东南沿海岛屿发现的最早的水稻遗存。</p>
+                            <img class="task-image" src="assets/images/贝丘.png" alt="贝丘">
+                            <div class="task-image-caption">贝丘</div>
+                            <p>平潭南岛语族先民“靠海吃海”又“依土而作”，滩涂采贝、海上捕鱼，是向海而生的智慧；播种稻、粟，是孕育沃土的勤勉。考古学家还在遗址中发现了可拆卸组合的陶质炊具，体现出先民为适应流动性生活而生的创造力。</p>
+                            <img class="task-image" src="assets/images/先民生活.png" alt="先民生活">
+                            <div class="task-image-caption">先民生活</div>
+                        </div>
+                        <button class="close-task" id="close-task" type="button">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 科考实拍展示面板 -->
+        <div class="field-photo-panel" id="field-photo-panel" aria-hidden="true">
+            <div class="field-photo-content">
+                <img class="field-photo-image" src="assets/第二章/科考实拍2.jpg" alt="科考实拍">
+                <div class="field-photo-caption">拍摄于10月17日，布探寻遗。</div>
+                <button class="close-field-photo" id="close-field-photo" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 章节推进纸条 -->
+        <div class="advance-note" id="advance-note" aria-hidden="true">
+            <div class="advance-note-content">
+                <div class="advance-note-text" id="advance-note-text"></div>
+                <button class="next-chapter-btn" id="next-chapter-btn" type="button">阅读下一章节</button>
+            </div>
+        </div>
+
+        <!-- 底部交互面板 -->
+        <nav class="bottom-panel" id="bottom-panel">
+            <button class="scroll-entry" id="btn-read-log" type="button">阅读日志</button>
+            <button class="scroll-entry" id="btn-check-status" type="button">查看状态</button>
+            <button class="scroll-entry" id="btn-todo" type="button">待办任务</button>
+            <button class="scroll-entry" id="btn-field-photos" type="button">科考实拍</button>
+        </nav>
+    </div>
+
+    <script>
+        (function () {
+            const diaryPage = document.getElementById('diary-page');
+            const diaryText = document.getElementById('diary-text');
+            const closeDiary = document.getElementById('close-diary');
+            const souvenirSection = document.getElementById('souvenir-section');
+            const statusPanel = document.getElementById('status-panel');
+            const closeStatus = document.getElementById('close-status');
+            const taskPanel = document.getElementById('task-panel');
+            const taskContent = document.getElementById('task-content');
+            const closeTask = document.getElementById('close-task');
+            const fieldPhotoPanel = document.getElementById('field-photo-panel');
+            const closeFieldPhoto = document.getElementById('close-field-photo');
+            const advanceNote = document.getElementById('advance-note');
+            const advanceNoteText = document.getElementById('advance-note-text');
+            const nextChapterBtn = document.getElementById('next-chapter-btn');
+            const btnReadLog = document.getElementById('btn-read-log');
+            const btnCheckStatus = document.getElementById('btn-check-status');
+            const btnTodo = document.getElementById('btn-todo');
+            const btnFieldPhotos = document.getElementById('btn-field-photos');
+
+            const paragraphs = [
+                '日期：10月17日  天气：雾转薄晴',
+                '今日的雾气变薄了，像一层被水洇湿的纸，透出模糊的轮廓，灰蓝色的海延伸向远方。',
+                '我们在壳丘头遗址的东侧布了一条探沟。忙碌许久，我在土层中掘取出一枚陶片，表面有一道弯曲宛若波浪的刻痕，我们将它命名为PT-01。',
+                '我把它托在掌心，没有急着清理。它在我掌心里的重量很轻，那些刻痕从断口处延伸出去，像一段没有倾诉完的故事。'
+            ];
+
+            const baseSpeed = 52;
+            const pauseAfterComma = 120;
+            const pauseAfterPeriod = 280;
+            const pauseBetweenParagraphs = 500;
+
+            let pIndex = 0;
+            let cIndex = 0;
+            let currentP = null;
+            let hasTyped = false;
+            let isTyping = false;
+            let diaryTypingActive = false;
+            let souvenirTimer = null;
+
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+
+            function resetDiary() {
+                diaryText.innerHTML = '';
+                pIndex = 0;
+                cIndex = 0;
+                currentP = null;
+            }
+
+            function startParagraph() {
+                currentP = document.createElement('p');
+                diaryText.appendChild(currentP);
+                cIndex = 0;
+            }
+
+            function getDelay(char) {
+                if ('，、'.includes(char)) return pauseAfterComma;
+                if ('。！？'.includes(char)) return pauseAfterPeriod;
+                return baseSpeed;
+            }
+
+            let typingAudio = null;
+
+            function initTypingAudio() {
+                if (!typingAudio) {
+                    typingAudio = new Audio('assets/第一章/打字音效.mp3');
+                    typingAudio.preload = 'auto';
+                    typingAudio.loop = true;
+                    typingAudio.volume = 0.42;
+                }
+            }
+
+            function startTypingSound() {
+                initTypingAudio();
+                if (!typingAudio) return;
+                typingAudio.currentTime = 0;
+                typingAudio.play().catch(function () {});
+            }
+
+            function stopTypingSound() {
+                if (!typingAudio) return;
+                typingAudio.pause();
+                typingAudio.currentTime = 0;
+            }
+
+            function showSouvenirSection() {
+                if (souvenirSection) souvenirSection.classList.add('visible');
+            }
+
+            function hideSouvenirSection() {
+                if (souvenirSection) souvenirSection.classList.remove('visible');
+            }
+
+            function onSouvenirShown() {
+                souvenirTimer = setTimeout(function () {
+                    if (!diaryPage.classList.contains('open')) return;
+                    closeDiary.classList.add('visible');
+                }, 500);
+            }
+
+            function typeNext() {
+                if (!diaryTypingActive) return;
+                if (pIndex >= paragraphs.length) {
+                    if (!diaryTypingActive) return;
+                    isTyping = false;
+                    hasTyped = true;
+                    stopTypingSound();
+                    cursor.style.animationIterationCount = '3';
+                    setTimeout(function () {
+                        if (!diaryTypingActive) return;
+                        cursor.style.opacity = '0';
+                        showSouvenirSection();
+                        onSouvenirShown();
+                    }, 400);
+                    return;
+                }
+
+                if (currentP === null) {
+                    startParagraph();
+                }
+
+                const text = paragraphs[pIndex];
+                if (cIndex < text.length) {
+                    const char = text[cIndex];
+                    currentP.textContent += char;
+                    cIndex++;
+                    currentP.appendChild(cursor);
+                    setTimeout(typeNext, getDelay(char));
+                } else {
+                    pIndex++;
+                    currentP = null;
+                    if (pIndex < paragraphs.length) {
+                        setTimeout(typeNext, pauseBetweenParagraphs);
+                    } else {
+                        typeNext();
+                    }
+                }
+            }
+
+            function openDiary() {
+                // 关闭其他可能遮挡日记的弹窗（不标记完成状态）
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+
+                diaryPage.setAttribute('aria-hidden', 'false');
+                diaryPage.classList.add('open');
+
+                if (!hasTyped) {
+                    resetDiary();
+                    hideSouvenirSection();
+                    closeDiary.classList.remove('visible');
+                    diaryTypingActive = true;
+                    isTyping = true;
+                    startTypingSound();
+                    setTimeout(typeNext, 300);
+                } else {
+                    // 已经阅读过，直接显示纪念物
+                    diaryTypingActive = true;
+                    showSouvenirSection();
+                    onSouvenirShown();
+                }
+            }
+
+            const panelCompleted = {
+                log: false,
+                status: false,
+                task: false,
+                fieldPhoto: false
+            };
+            let advanceNoteShown = false;
+
+            function checkAllPanelsCompleted() {
+                if (advanceNoteShown) return;
+                const allCompleted = panelCompleted.log && panelCompleted.status &&
+                                     panelCompleted.task && panelCompleted.fieldPhoto;
+                if (allCompleted) {
+                    advanceNoteShown = true;
+                    setTimeout(showAdvanceNote, 400);
+                }
+            }
+
+            function showAdvanceNote() {
+                advanceNote.setAttribute('aria-hidden', 'false');
+                advanceNote.classList.add('open');
+                typeAdvanceNote();
+            }
+
+            function typeAdvanceNote() {
+                const text = '陆海兼容、和谐共生，正是这片“祖源地”留给后世珍贵的文明启示。';
+                advanceNoteText.innerHTML = '';
+                let index = 0;
+                const cursor = document.createElement('span');
+                cursor.className = 'advance-note-cursor';
+
+                function typeChar() {
+                    if (index < text.length) {
+                        advanceNoteText.textContent += text[index];
+                        index++;
+                        advanceNoteText.appendChild(cursor);
+                        setTimeout(typeChar, 70);
+                    } else {
+                        stopTypingSound();
+                        cursor.style.animationIterationCount = '3';
+                        setTimeout(function () {
+                            cursor.style.opacity = '0';
+                            nextChapterBtn.classList.add('visible');
+                        }, 500);
+                    }
+                }
+
+                startTypingSound();
+                setTimeout(typeChar, 400);
+            }
+
+            function closeDiaryPanel() {
+                diaryTypingActive = false;
+                stopTypingSound();
+                if (souvenirTimer) {
+                    clearTimeout(souvenirTimer);
+                    souvenirTimer = null;
+                }
+                hideSouvenirSection();
+                diaryPage.classList.remove('open');
+                diaryPage.setAttribute('aria-hidden', 'true');
+                closeDiary.classList.remove('visible');
+                panelCompleted.log = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openStatusPanel() {
+                statusPanel.setAttribute('aria-hidden', 'false');
+                statusPanel.classList.add('open');
+            }
+
+            function closeStatusPanel() {
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.status = true;
+                checkAllPanelsCompleted();
+            }
+
+            // 修复陶罐拼图小游戏
+            const puzzleBoard = document.getElementById('puzzle-board');
+            const puzzlePhase = document.getElementById('puzzle-phase');
+            const taskResult = document.getElementById('task-result');
+            const puzzleImageSrc = 'assets/images/陶罐拼图.png';
+            let draggedPiece = null;
+            let selectedPiece = null;
+            let puzzleSolved = false;
+            let touchClone = null;
+            let touchStartPiece = null;
+            let touchMoved = false;
+            let mouseDragPiece = null;
+            let mouseDragClone = null;
+            let mouseDragOffsetX = 0;
+            let mouseDragOffsetY = 0;
+            let mouseMoved = false;
+
+            function createPiece(correctIndex) {
+                const piece = document.createElement('div');
+                piece.className = 'puzzle-piece';
+                piece.dataset.correctIndex = correctIndex;
+
+                const row = Math.floor(correctIndex / 2);
+                const col = correctIndex % 2;
+                piece.style.backgroundImage = 'url(' + puzzleImageSrc + ')';
+                piece.style.backgroundSize = '200% 200%';
+                piece.style.backgroundPosition = (col * 100) + '% ' + (row * 100) + '%';
+
+                piece.addEventListener('mousedown', handleMouseDown);
+                piece.addEventListener('click', handlePieceClick);
+
+                // 移动设备触摸拖拽支持
+                piece.addEventListener('touchstart', handleTouchStart, { passive: false });
+                piece.addEventListener('touchmove', handleTouchMove, { passive: false });
+                piece.addEventListener('touchend', handleTouchEnd);
+                piece.addEventListener('touchcancel', handleTouchEnd);
+
+                return piece;
+            }
+
+            function initPuzzle() {
+                if (!puzzleBoard) return;
+                puzzleBoard.innerHTML = '';
+                puzzleSolved = false;
+                selectedPiece = null;
+
+                // 重置视图：显示游戏区，隐藏结果区
+                if (puzzlePhase) puzzlePhase.style.display = 'flex';
+                if (taskResult) taskResult.style.display = 'none';
+
+                const slots = [];
+                for (let i = 0; i < 4; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'puzzle-slot';
+                    slot.dataset.index = i;
+                    puzzleBoard.appendChild(slot);
+                    slots.push(slot);
+                }
+
+                // 随机打乱碎片顺序，避免初始即为完成状态
+                let indices = [0, 1, 2, 3];
+                let isSolved = true;
+                while (isSolved) {
+                    for (let i = indices.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        const temp = indices[i];
+                        indices[i] = indices[j];
+                        indices[j] = temp;
+                    }
+                    isSolved = indices.every(function (correctIndex, slotIndex) {
+                        return correctIndex === slotIndex;
+                    });
+                }
+
+                indices.forEach(function (correctIndex, slotIndex) {
+                    const piece = createPiece(correctIndex);
+                    slots[slotIndex].appendChild(piece);
+                });
+            }
+
+            // 桌面端鼠标拖拽支持
+            function handleMouseDown(event) {
+                if (puzzleSolved) return;
+                event.preventDefault();
+                mouseDragPiece = this;
+                mouseMoved = false;
+
+                const rect = this.getBoundingClientRect();
+                mouseDragOffsetX = event.clientX - rect.left;
+                mouseDragOffsetY = event.clientY - rect.top;
+
+                mouseDragClone = this.cloneNode(true);
+                mouseDragClone.style.position = 'fixed';
+                mouseDragClone.style.left = rect.left + 'px';
+                mouseDragClone.style.top = rect.top + 'px';
+                mouseDragClone.style.width = rect.width + 'px';
+                mouseDragClone.style.height = rect.height + 'px';
+                mouseDragClone.style.zIndex = '1000';
+                mouseDragClone.style.pointerEvents = 'none';
+                mouseDragClone.style.opacity = '0.85';
+                mouseDragClone.classList.add('dragging');
+                document.body.appendChild(mouseDragClone);
+
+                this.style.opacity = '0.3';
+
+                document.addEventListener('mousemove', handleMouseMove);
+                document.addEventListener('mouseup', handleMouseUp);
+            }
+
+            function handleMouseMove(event) {
+                if (!mouseDragClone) return;
+                mouseMoved = true;
+                mouseDragClone.style.left = (event.clientX - mouseDragOffsetX) + 'px';
+                mouseDragClone.style.top = (event.clientY - mouseDragOffsetY) + 'px';
+
+                mouseDragClone.style.display = 'none';
+                const target = document.elementFromPoint(event.clientX, event.clientY);
+                mouseDragClone.style.display = '';
+                const slot = target ? target.closest('.puzzle-slot') : null;
+
+                puzzleBoard.querySelectorAll('.puzzle-slot').forEach(function (slotEl) {
+                    slotEl.classList.remove('drag-over');
+                });
+                if (slot) {
+                    slot.classList.add('drag-over');
+                }
+            }
+
+            function handleMouseUp(event) {
+                if (!mouseDragClone || !mouseDragPiece) return;
+
+                mouseDragClone.style.display = 'none';
+                const target = document.elementFromPoint(event.clientX, event.clientY);
+                mouseDragClone.style.display = '';
+                const slot = target ? target.closest('.puzzle-slot') : null;
+
+                puzzleBoard.querySelectorAll('.puzzle-slot').forEach(function (slotEl) {
+                    slotEl.classList.remove('drag-over');
+                });
+
+                mouseDragPiece.style.opacity = '';
+
+                if (slot && slot !== mouseDragPiece.parentElement) {
+                    swapPieces(mouseDragPiece.parentElement, slot);
+                }
+
+                document.body.removeChild(mouseDragClone);
+                mouseDragClone = null;
+                mouseDragPiece = null;
+
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+
+                setTimeout(function () {
+                    mouseMoved = false;
+                }, 0);
+            }
+
+            // 移动设备触摸拖拽支持
+            function handleTouchStart(event) {
+                if (puzzleSolved) return;
+                event.preventDefault();
+                const touch = event.touches[0];
+                touchStartPiece = this;
+                touchMoved = false;
+
+                const rect = this.getBoundingClientRect();
+                touchClone = this.cloneNode(true);
+                touchClone.style.position = 'fixed';
+                touchClone.style.left = rect.left + 'px';
+                touchClone.style.top = rect.top + 'px';
+                touchClone.style.width = rect.width + 'px';
+                touchClone.style.height = rect.height + 'px';
+                touchClone.style.zIndex = '1000';
+                touchClone.style.pointerEvents = 'none';
+                touchClone.style.opacity = '0.85';
+                touchClone.classList.add('dragging');
+                document.body.appendChild(touchClone);
+
+                this.style.opacity = '0.3';
+            }
+
+            function handleTouchMove(event) {
+                if (!touchClone) return;
+                event.preventDefault();
+                touchMoved = true;
+                const touch = event.touches[0];
+                touchClone.style.left = (touch.clientX - touchClone.offsetWidth / 2) + 'px';
+                touchClone.style.top = (touch.clientY - touchClone.offsetHeight / 2) + 'px';
+
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                const slot = target ? target.closest('.puzzle-slot') : null;
+
+                document.querySelectorAll('.puzzle-slot').forEach(function (slotEl) {
+                    slotEl.classList.remove('drag-over');
+                });
+                if (slot) {
+                    slot.classList.add('drag-over');
+                }
+            }
+
+            function handleTouchEnd(event) {
+                if (!touchClone || !touchStartPiece) return;
+
+                const touch = event.changedTouches[0];
+                touchClone.style.display = 'none';
+                const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                const slot = target ? target.closest('.puzzle-slot') : null;
+                touchClone.style.display = '';
+
+                document.querySelectorAll('.puzzle-slot').forEach(function (slotEl) {
+                    slotEl.classList.remove('drag-over');
+                });
+
+                touchStartPiece.style.opacity = '';
+
+                if (slot && slot !== touchStartPiece.parentElement) {
+                    swapPieces(touchStartPiece.parentElement, slot);
+                }
+
+                document.body.removeChild(touchClone);
+                touchClone = null;
+                touchStartPiece = null;
+                setTimeout(function () {
+                    touchMoved = false;
+                }, 0);
+            }
+
+            function handlePieceClick() {
+                if (puzzleSolved) return;
+                if (touchMoved || mouseMoved) {
+                    touchMoved = false;
+                    mouseMoved = false;
+                    return;
+                }
+
+                if (selectedPiece === this) {
+                    this.classList.remove('selected');
+                    selectedPiece = null;
+                    return;
+                }
+
+                if (selectedPiece) {
+                    swapPieces(selectedPiece.parentElement, this.parentElement);
+                    selectedPiece.classList.remove('selected');
+                    selectedPiece = null;
+                } else {
+                    this.classList.add('selected');
+                    selectedPiece = this;
+                }
+            }
+
+            function swapPieces(slotA, slotB) {
+                const pieceA = slotA.querySelector('.puzzle-piece');
+                const pieceB = slotB.querySelector('.puzzle-piece');
+
+                if (pieceA) slotB.appendChild(pieceA);
+                if (pieceB) slotA.appendChild(pieceB);
+
+                checkPuzzleSolved();
+            }
+
+            function checkPuzzleSolved() {
+                if (puzzleSolved || !puzzleBoard) return;
+
+                const slots = puzzleBoard.querySelectorAll('.puzzle-slot');
+                let allCorrect = true;
+                slots.forEach(function (slot) {
+                    const piece = slot.querySelector('.puzzle-piece');
+                    if (!piece || parseInt(piece.dataset.correctIndex, 10) !== parseInt(slot.dataset.index, 10)) {
+                        allCorrect = false;
+                    }
+                });
+
+                if (allCorrect) {
+                    puzzleSolved = true;
+                    const pieces = puzzleBoard.querySelectorAll('.puzzle-piece');
+                    pieces.forEach(function (piece) {
+                        piece.classList.add('solved');
+                    });
+                    setTimeout(showTaskResult, 400);
+                }
+            }
+
+            function showTaskResult() {
+                if (puzzlePhase) puzzlePhase.style.display = 'none';
+                if (taskResult) {
+                    taskResult.style.display = 'block';
+                    closeTask.classList.add('visible');
+                }
+            }
+
+            function openTaskPanel() {
+                taskPanel.setAttribute('aria-hidden', 'false');
+                taskPanel.classList.add('open');
+
+                // 若已完成，直接展示结果与关闭按钮
+                if (puzzleSolved) {
+                    if (puzzlePhase) puzzlePhase.style.display = 'none';
+                    if (taskResult) taskResult.style.display = 'block';
+                    closeTask.classList.add('visible');
+                    return;
+                }
+
+                closeTask.classList.remove('visible');
+                initPuzzle();
+            }
+
+            function closeTaskPanel() {
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.task = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openFieldPhotoPanel() {
+                fieldPhotoPanel.setAttribute('aria-hidden', 'false');
+                fieldPhotoPanel.classList.add('open');
+            }
+
+            function closeFieldPhotoPanel() {
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.fieldPhoto = true;
+                checkAllPanelsCompleted();
+            }
+
+            btnReadLog.addEventListener('click', openDiary);
+            closeDiary.addEventListener('click', closeDiaryPanel);
+            btnCheckStatus.addEventListener('click', openStatusPanel);
+            closeStatus.addEventListener('click', closeStatusPanel);
+            btnTodo.addEventListener('click', openTaskPanel);
+            closeTask.addEventListener('click', closeTaskPanel);
+            btnFieldPhotos.addEventListener('click', openFieldPhotoPanel);
+            closeFieldPhoto.addEventListener('click', closeFieldPhotoPanel);
+            nextChapterBtn.addEventListener('click', function () {
+                window.location.href = 'chapter5.html';
+            });
+        })();
+    </script>
+    <script src="js/progress-bar.js"></script>
+    <script src="js/global-music.js"></script>
+</body>
+</html>
+
+
+
+

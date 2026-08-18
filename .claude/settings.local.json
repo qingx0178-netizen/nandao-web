@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Test-Path *)",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(Get-ChildItem 'D:\\\\南岛语\\\\网页项目\\\\assets\\\\images' | Where-Object { $_.Name -match '终章|星辰大海|漂流瓶|海风与远航' } | Select-Object Name, Length | Format-List;)",
+      "PowerShell(\\(Get-Command ffmpeg -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(python --version 2>$null; python -c \"import cv2; print\\('opencv ok'\\)\" 2>$null)",
+      "PowerShell(\\(Get-Command vlc -ErrorAction SilentlyContinue\\).Source; \\(Get-Command magick -ErrorAction SilentlyContinue\\).Source; \\(Get-Command convert -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(python -m pip install opencv-python-headless -q)",
+      "PowerShell(python -m pip list)"
+    ]
+  }
+}

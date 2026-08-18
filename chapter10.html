@@ -1,0 +1,1489 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第五章：远航——探索</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/progress-bar.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            background-image: url('assets/images/交互背景2.jpg');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+        }
+
+        /* 探索页面舞台 */
+        .explore-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 日记本内页 */
+        .diary-page {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: min(72vw, 820px);
+            max-height: 76vh;
+            padding: 5vh 5vw;
+            overflow-y: auto;
+            background-color: #F7F4EC;
+            background-image: url('assets/第一章/纸页.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            border-radius: 3px;
+            box-shadow:
+                0 8px 36px rgba(0, 0, 0, 0.14),
+                0 0 0 1px rgba(117, 104, 91, 0.12),
+                inset 0 0 80px rgba(160, 150, 130, 0.12);
+            z-index: 40;
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -50%) scale(0.96);
+            transition: opacity 0.6s ease, visibility 0.6s ease, transform 0.6s ease;
+        }
+
+        .diary-page.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .diary-page::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
+            left: 20px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .diary-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .diary-text p {
+            margin-bottom: 1.6em;
+            text-indent: 2em;
+        }
+
+        .diary-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 2em;
+            color: #5C5348;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .diary-page::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .diary-page::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .diary-page::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        /* 关闭日记 */
+        .close-diary {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.7em 1.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-decoration: none;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-diary.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-diary:hover,
+        .close-diary:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        /* 纪念物卷轴展示 */
+        .souvenir-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2.5em;
+        }
+
+        .souvenir-image,
+        .souvenir-caption {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .souvenir-image.visible,
+        .souvenir-caption.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .souvenir-image {
+            width: min(140px, 32vw);
+            height: auto;
+        }
+
+        .souvenir-caption {
+            margin-top: 1em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+            letter-spacing: 0.08em;
+            line-height: 1.8;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        /* 底部交互面板 */
+        .bottom-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: clamp(16px, 4vw, 48px);
+            padding: 0 5vw 6vh;
+            z-index: 5;
+            opacity: 0;
+            animation: panelFadeIn 1.2s ease-out 0.4s forwards;
+        }
+
+        @keyframes panelFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 状态图片展示面板 */
+        .status-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .status-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .status-content {
+            position: relative;
+            width: min(78vw, 960px);
+            height: min(78vh, 680px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .status-panel.open .status-content {
+            transform: scale(1);
+        }
+
+        .status-image {
+            width: 100%;
+            height: calc(100% - 60px);
+            object-fit: fill;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .close-status {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-status:hover,
+        .close-status:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 任务面板（循星迹与探航路） */
+        .task-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .task-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .task-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 0;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .task-panel.open .task-content {
+            transform: scale(1);
+        }
+
+        .task-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5vh 5vw;
+            scrollbar-width: thin;
+        }
+
+        .task-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .task-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .task-scroll::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        .task-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+        }
+
+        .task-text p {
+            margin-bottom: 1.4em;
+            text-indent: 2em;
+        }
+
+        .task-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 1.8em;
+            color: #5C5348;
+        }
+
+        .task-image {
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            display: block;
+            margin: 1em 0 0;
+            border-radius: 2px;
+        }
+
+        .task-image-caption {
+            text-align: center;
+            font-size: 0.85em;
+            color: #75685B;
+            margin-top: 0.6em;
+            letter-spacing: 0.1em;
+        }
+
+        .close-task {
+            display: block;
+            width: fit-content;
+            margin: 2em auto 0;
+            padding: 0.7em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-task.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-task:hover,
+        .close-task:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 循星迹与探航路小游戏区域 */
+        .games-phase {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100%;
+            padding: 3vh 0;
+        }
+
+        .game-hint {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2.2vw, 1.4rem);
+            letter-spacing: 0.35em;
+            color: #6B6055;
+            margin-bottom: 1.5em;
+            text-align: center;
+        }
+
+        .game-next-btn {
+            display: block;
+            width: fit-content;
+            margin: 1.8em auto 0;
+            padding: 0.7em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(2px);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .game-next-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .game-next-btn:hover,
+        .game-next-btn:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 循星迹 */
+        .stars-sky {
+            position: relative;
+            width: min(72vw, 560px);
+            cursor: pointer;
+            border-radius: 2px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stars-sky img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .star {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #F5F0E3;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(245, 240, 227, 0.95), 0 0 20px rgba(245, 240, 227, 0.6);
+            opacity: 0;
+            transform: scale(0.6);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            pointer-events: none;
+        }
+
+        .star.visible {
+            opacity: 1;
+            transform: scale(1);
+            animation: starTwinkle 1.6s ease-in-out infinite;
+        }
+
+        @keyframes starTwinkle {
+            0%, 100% { opacity: 0.55; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.15); }
+        }
+
+        /* 探航路 */
+        .migration-map {
+            position: relative;
+            width: min(78vw, 760px);
+            padding: 1.5em;
+            background-image: url('assets/images/绘制航线交互区底图.jpg');
+            background-size: cover;
+            background-position: center;
+            border: 1px solid rgba(117, 104, 91, 0.18);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .migration-svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .migration-segment {
+            transition: stroke-dashoffset 0.8s ease;
+        }
+
+        .migration-segment.revealed {
+            stroke-dashoffset: 0;
+        }
+
+        .migration-node {
+            fill: #F5F0E3;
+            stroke: #75685B;
+            stroke-width: 2;
+            transition: fill 0.4s ease, stroke 0.4s ease, r 0.4s ease;
+        }
+
+        .migration-node.visited {
+            fill: #75685B;
+        }
+
+        .migration-node-label {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            fill: #5C5348;
+            pointer-events: none;
+        }
+
+        .migration-hint {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.6vw, 1.05rem);
+            letter-spacing: 0.12em;
+            color: #5C5348;
+            text-align: center;
+            margin-top: 1.2em;
+            min-height: 1.8em;
+            transition: color 0.3s ease;
+        }
+
+        .migration-hint.success {
+            color: #5C7A5C;
+        }
+
+        .task-result {
+            display: none;
+        }
+
+        /* 科考实拍展示面板 */
+        .field-photo-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .field-photo-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .field-photo-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .field-photo-panel.open .field-photo-content {
+            transform: scale(1);
+        }
+
+        .field-photo-image {
+            width: 100%;
+            height: calc(100% - 110px);
+            object-fit: contain;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .field-photo-caption {
+            margin-top: 14px;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.12em;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        .close-field-photo {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-field-photo:hover,
+        .close-field-photo:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 章节推进纸条 */
+        .advance-note {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.48);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .advance-note.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .advance-note-content {
+            position: relative;
+            width: min(72vw, 620px);
+            padding: 6vh 6vw;
+            background:
+                linear-gradient(to bottom, #F5F0E3, #EDE8DC);
+            background-size: cover;
+            border-radius: 2px;
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.18),
+                0 0 0 1px rgba(117, 104, 91, 0.15),
+                inset 0 0 50px rgba(160, 150, 130, 0.1);
+            transform: scale(0.96) rotate(-1deg);
+            transition: transform 0.6s ease;
+        }
+
+        .advance-note.open .advance-note-content {
+            transform: scale(1) rotate(-0.5deg);
+        }
+
+        .advance-note-content::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            bottom: 16px;
+            left: 16px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .advance-note-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2vw, 1.35rem);
+            line-height: 2.2;
+            letter-spacing: 0.06em;
+            color: #3D352C;
+            text-align: center;
+            min-height: 4em;
+        }
+
+        .advance-note-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        .next-chapter-btn {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.75em 2em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.32);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .next-chapter-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .next-chapter-btn:hover,
+        .next-chapter-btn:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 卷轴入口 */
+        .scroll-entry {
+            position: relative;
+            flex: 1;
+            max-width: 220px;
+            padding: 1.1em 0.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.8rem, 1.4vw, 1rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            background: linear-gradient(to right, #E2D9C4 0%, #F5F0E3 12%, #F5F0E3 88%, #E2D9C4 100%);
+            border: 1px solid rgba(117, 104, 91, 0.32);
+            border-radius: 3px;
+            box-shadow:
+                0 4px 14px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+        }
+
+        .scroll-entry::before,
+        .scroll-entry::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            width: 14px;
+            height: calc(100% + 2px);
+            background: linear-gradient(to bottom, #C9BEA8, #DDD5C2 40%, #DDD5C2 60%, #C9BEA8);
+            border: 1px solid rgba(117, 104, 91, 0.35);
+            border-radius: 2px;
+            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.06);
+            pointer-events: none;
+        }
+
+        .scroll-entry::before {
+            left: -8px;
+        }
+
+        .scroll-entry::after {
+            right: -8px;
+        }
+
+        .scroll-entry:hover,
+        .scroll-entry:focus {
+            color: #3D352C;
+            background: linear-gradient(to right, #DDD5C2 0%, #FAF8F0 12%, #FAF8F0 88%, #DDD5C2 100%);
+            transform: translateY(-4px);
+            box-shadow:
+                0 8px 22px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+    </style>
+</head>
+<body>
+    <div class="explore-stage">
+        <!-- 日记本内页 -->
+        <article class="diary-page" id="diary-page" aria-hidden="true">
+            <div class="diary-text" id="diary-text"></div>
+            <div class="souvenir-section" id="souvenir-section">
+                <img class="souvenir-image" id="souvenir-image" src="assets/第五章/卷轴.png" alt="卷轴">
+                <div class="souvenir-caption" id="souvenir-caption">解锁纪念物：一份神秘的坐标图</div>
+            </div>
+            <a class="close-diary" id="close-diary" aria-label="关闭日记">关闭日记</a>
+        </article>
+
+        <!-- 状态图片展示面板 -->
+        <div class="status-panel" id="status-panel" aria-hidden="true">
+            <div class="status-content">
+                <img class="status-image" id="status-image" src="assets/images/状态5.jpg" alt="状态查看">
+                <button class="close-status" id="close-status" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 任务面板（循星迹与探航路） -->
+        <div class="task-panel" id="task-panel" aria-hidden="true">
+            <div class="task-content" id="task-content">
+                <div class="task-scroll" id="task-scroll">
+                    <div class="games-phase" id="games-phase">
+                        <!-- 小游戏一：循星迹，点亮夜明星 -->
+                        <div class="stars-game" id="stars-game">
+                            <div class="game-hint">循星迹，点亮夜明星</div>
+                            <div class="stars-sky" id="stars-sky">
+                                <img src="assets/images/星空.png" alt="星空">
+                                <div class="star" style="top: 18%; left: 22%;"></div>
+                                <div class="star" style="top: 28%; left: 48%;"></div>
+                                <div class="star" style="top: 16%; left: 72%;"></div>
+                                <div class="star" style="top: 42%; left: 35%;"></div>
+                                <div class="star" style="top: 52%; left: 64%;"></div>
+                                <div class="star" style="top: 38%; left: 84%;"></div>
+                                <div class="star" style="top: 62%; left: 18%;"></div>
+                                <div class="star" style="top: 72%; left: 45%;"></div>
+                            </div>
+                            <button class="game-next-btn" id="stars-next-btn" type="button">继续</button>
+                        </div>
+
+                        <!-- 小游戏二：探航路，绘制迁徙路线 -->
+                        <div class="migration-game" id="migration-game" style="display: none;">
+                            <div class="game-hint">探航路，绘制迁徙路线</div>
+                            <div class="migration-map" id="migration-map">
+                                <svg class="migration-svg" viewBox="0 0 800 420" preserveAspectRatio="xMidYMid meet">
+                                    <!-- 木舟移动参考路径（不显示） -->
+                                    <path id="migration-path-ref" d="M80,210 L240,170 L400,240 L560,160 L720,280" fill="none" stroke="none"/>
+                                    <!-- 航线分段，初始隐藏 -->
+                                    <g class="migration-segments" id="migration-segments">
+                                        <path class="migration-segment" data-segment="0" d="M80,210 L240,170" fill="none" stroke="#75685B" stroke-width="2"/>
+                                        <path class="migration-segment" data-segment="1" d="M240,170 L400,240" fill="none" stroke="#75685B" stroke-width="2"/>
+                                        <path class="migration-segment" data-segment="2" d="M400,240 L560,160" fill="none" stroke="#75685B" stroke-width="2"/>
+                                        <path class="migration-segment" data-segment="3" d="M560,160 L720,280" fill="none" stroke="#75685B" stroke-width="2"/>
+                                    </g>
+                                    <g class="migration-nodes">
+                                        <circle cx="80" cy="210" r="7" class="migration-node"/>
+                                        <text x="80" y="245" text-anchor="middle" class="migration-node-label">福建沿海</text>
+                                        <circle cx="240" cy="170" r="7" class="migration-node"/>
+                                        <text x="240" y="145" text-anchor="middle" class="migration-node-label">台湾/菲律宾</text>
+                                        <circle cx="400" cy="240" r="7" class="migration-node"/>
+                                        <text x="400" y="275" text-anchor="middle" class="migration-node-label">婆罗洲/印尼</text>
+                                        <circle cx="560" cy="160" r="7" class="migration-node"/>
+                                        <text x="560" y="135" text-anchor="middle" class="migration-node-label">太平洋群岛</text>
+                                        <circle cx="720" cy="280" r="7" class="migration-node"/>
+                                        <text x="720" y="315" text-anchor="middle" class="migration-node-label">马达加斯加</text>
+                                    </g>
+                                    <image id="migration-canoe" href="assets/images/独木舟.png" width="44" height="44" x="-22" y="-22" opacity="0"></image>
+                                </svg>
+                            </div>
+                            <div class="migration-hint" id="migration-hint">点击“启航”，观察独木舟依次经过节点并绘制航线</div>
+                            <button class="game-next-btn" id="migration-start-btn" type="button">启航</button>
+                        </div>
+                    </div>
+
+                    <div class="task-result" id="task-result">
+                        <div class="task-text" id="task-text">
+                            <p>南岛语族的海洋迁徙：</p>
+                            <p>约距今5000-3500年：福建沿海新石器人群携带农业与陶器文化，跨越台湾海峡进入台湾岛。</p>
+                            <p>约公元前3000年：台湾原住民群体渡海至菲律宾北部的巴丹群岛与吕宋岛。</p>
+                            <p>约公元前2500-1000年：迁徙群体自吕宋分支，向南覆盖菲律宾全境、婆罗洲与印度尼西亚群岛；另一支沿马来半岛进入东南亚大陆沿海。</p>
+                            <p>约公元前1000年起：携带拉皮塔文化陶器组合的南岛语族分支，开始向西南太平洋远距离深海拓殖，最终抵达波利尼西亚全域。</p>
+                            <p>约公元500-800年：另一支迁徙群体沿印度洋方向持续西进，最终抵达非洲东岸外海的马达加斯加岛。</p>
+                            <img class="task-image" src="assets/images/迁徙图.png" alt="迁徙图">
+                            <div class="task-image-caption">南岛语族迁徙路线</div>
+                        </div>
+                        <button class="close-task" id="close-task" type="button">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 科考实拍展示面板 -->
+        <div class="field-photo-panel" id="field-photo-panel" aria-hidden="true">
+            <div class="field-photo-content">
+                <img class="field-photo-image" src="assets/第五章/科考实拍5.jpg" alt="科考实拍">
+                <div class="field-photo-caption">拍摄于11月12日，完善资料。</div>
+                <button class="close-field-photo" id="close-field-photo" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 章节推进纸条 -->
+        <div class="advance-note" id="advance-note" aria-hidden="true">
+            <div class="advance-note-content">
+                <div class="advance-note-text" id="advance-note-text"></div>
+                <button class="next-chapter-btn" id="next-chapter-btn" type="button">阅读下一章节</button>
+            </div>
+        </div>
+
+        <!-- 底部交互面板 -->
+        <nav class="bottom-panel" id="bottom-panel">
+            <button class="scroll-entry" id="btn-read-log" type="button">阅读日志</button>
+            <button class="scroll-entry" id="btn-check-status" type="button">查看状态</button>
+            <button class="scroll-entry" id="btn-todo" type="button">待办任务</button>
+            <button class="scroll-entry" id="btn-field-photos" type="button">科考实拍</button>
+        </nav>
+    </div>
+
+    <script>
+        (function () {
+            const diaryPage = document.getElementById('diary-page');
+            const diaryText = document.getElementById('diary-text');
+            const closeDiary = document.getElementById('close-diary');
+            const souvenirSection = document.getElementById('souvenir-section');
+            const souvenirImage = document.getElementById('souvenir-image');
+            const souvenirCaption = document.getElementById('souvenir-caption');
+            const statusPanel = document.getElementById('status-panel');
+            const closeStatus = document.getElementById('close-status');
+            const taskPanel = document.getElementById('task-panel');
+            const taskContent = document.getElementById('task-content');
+            const closeTask = document.getElementById('close-task');
+            const fieldPhotoPanel = document.getElementById('field-photo-panel');
+            const closeFieldPhoto = document.getElementById('close-field-photo');
+            const advanceNote = document.getElementById('advance-note');
+            const advanceNoteText = document.getElementById('advance-note-text');
+            const nextChapterBtn = document.getElementById('next-chapter-btn');
+            const btnReadLog = document.getElementById('btn-read-log');
+            const btnCheckStatus = document.getElementById('btn-check-status');
+            const btnTodo = document.getElementById('btn-todo');
+            const btnFieldPhotos = document.getElementById('btn-field-photos');
+
+            const paragraphs = [
+                '日期：11月12日  天气：晴',
+                '科考研究进入了下一步工作方向。老陈说，先民走过的足迹比我们想象得还要远。',
+                '于是，我花了几天时间整理南岛语族扩散的时空框架。越整理，越觉得手里的陶片在变“沉”，这一脉族群不会只囿于平潭和台湾，它是整条迁徙链条最靠近起点的那一环，而海洋的深处或许还有更多可能性。',
+                '我们开始联系国际南岛语族文化研究的其他课题组，尝试进一步的交流。'
+            ];
+
+            const baseSpeed = 52;
+            const pauseAfterComma = 120;
+            const pauseAfterPeriod = 280;
+            const pauseBetweenParagraphs = 500;
+
+            let pIndex = 0;
+            let cIndex = 0;
+            let currentP = null;
+            let hasTyped = false;
+            let isTyping = false;
+            let diaryTypingActive = false;
+            let souvenirTimer = null;
+
+            bindSouvenirTransitions();
+
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+
+            function resetDiary() {
+                diaryText.innerHTML = '';
+                pIndex = 0;
+                cIndex = 0;
+                currentP = null;
+            }
+
+            function startParagraph() {
+                currentP = document.createElement('p');
+                diaryText.appendChild(currentP);
+                cIndex = 0;
+            }
+
+            function getDelay(char) {
+                if ('，、'.includes(char)) return pauseAfterComma;
+                if ('。！？'.includes(char)) return pauseAfterPeriod;
+                return baseSpeed;
+            }
+
+            let typingAudio = null;
+
+            function initTypingAudio() {
+                if (!typingAudio) {
+                    typingAudio = new Audio('assets/第一章/打字音效.mp3');
+                    typingAudio.preload = 'auto';
+                    typingAudio.loop = true;
+                    typingAudio.volume = 0.42;
+                }
+            }
+
+            function startTypingSound() {
+                initTypingAudio();
+                if (!typingAudio) return;
+                typingAudio.currentTime = 0;
+                typingAudio.play().catch(function () {});
+            }
+
+            function stopTypingSound() {
+                if (!typingAudio) return;
+                typingAudio.pause();
+                typingAudio.currentTime = 0;
+            }
+
+            function showSouvenirImage() {
+                if (souvenirImage) souvenirImage.classList.add('visible');
+            }
+
+            function showSouvenirCaption() {
+                if (souvenirCaption) souvenirCaption.classList.add('visible');
+            }
+
+            function hideSouvenirSection() {
+                if (souvenirImage) souvenirImage.classList.remove('visible');
+                if (souvenirCaption) souvenirCaption.classList.remove('visible');
+                if (souvenirTimer) {
+                    clearTimeout(souvenirTimer);
+                    souvenirTimer = null;
+                }
+            }
+
+            function showCloseDiaryHint() {
+                souvenirTimer = setTimeout(function () {
+                    if (!diaryPage.classList.contains('open')) return;
+                    closeDiary.classList.add('visible');
+                }, 500);
+            }
+
+            function bindSouvenirTransitions() {
+                if (souvenirImage) {
+                    souvenirImage.addEventListener('transitionend', function (e) {
+                        if (e.propertyName === 'opacity' && souvenirImage.classList.contains('visible')) {
+                            showSouvenirCaption();
+                        }
+                    });
+                }
+                if (souvenirCaption) {
+                    souvenirCaption.addEventListener('transitionend', function (e) {
+                        if (e.propertyName === 'opacity' && souvenirCaption.classList.contains('visible')) {
+                            showCloseDiaryHint();
+                        }
+                    });
+                }
+            }
+
+            function typeNext() {
+                if (!diaryTypingActive) return;
+                if (pIndex >= paragraphs.length) {
+                    if (!diaryTypingActive) return;
+                    isTyping = false;
+                    hasTyped = true;
+                    stopTypingSound();
+                    cursor.style.animationIterationCount = '3';
+                    setTimeout(function () {
+                        if (!diaryTypingActive) return;
+                        cursor.style.opacity = '0';
+                        showSouvenirImage();
+                    }, 400);
+                    return;
+                }
+
+                if (currentP === null) {
+                    startParagraph();
+                }
+
+                const text = paragraphs[pIndex];
+                if (cIndex < text.length) {
+                    const char = text[cIndex];
+                    currentP.textContent += char;
+                    cIndex++;
+                    currentP.appendChild(cursor);
+                    setTimeout(typeNext, getDelay(char));
+                } else {
+                    pIndex++;
+                    currentP = null;
+                    if (pIndex < paragraphs.length) {
+                        setTimeout(typeNext, pauseBetweenParagraphs);
+                    } else {
+                        typeNext();
+                    }
+                }
+            }
+
+            function openDiary() {
+                // 关闭其他可能遮挡日记的弹窗（不标记完成状态）
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+
+                diaryPage.setAttribute('aria-hidden', 'false');
+                diaryPage.classList.add('open');
+
+                if (!hasTyped) {
+                    resetDiary();
+                    hideSouvenirSection();
+                    closeDiary.classList.remove('visible');
+                    diaryTypingActive = true;
+                    isTyping = true;
+                    startTypingSound();
+                    setTimeout(typeNext, 300);
+                } else {
+                    // 已经阅读过，直接显示纪念物与关闭提示
+                    diaryTypingActive = true;
+                    showSouvenirImage();
+                    showSouvenirCaption();
+                    closeDiary.classList.add('visible');
+                }
+            }
+
+            const panelCompleted = {
+                log: false,
+                status: false,
+                task: false,
+                fieldPhoto: false
+            };
+            let advanceNoteShown = false;
+
+            function checkAllPanelsCompleted() {
+                if (advanceNoteShown) return;
+                const allCompleted = panelCompleted.log && panelCompleted.status &&
+                                     panelCompleted.task && panelCompleted.fieldPhoto;
+                if (allCompleted) {
+                    advanceNoteShown = true;
+                    setTimeout(showAdvanceNote, 400);
+                }
+            }
+
+            function showAdvanceNote() {
+                advanceNote.setAttribute('aria-hidden', 'false');
+                advanceNote.classList.add('open');
+                typeAdvanceNote();
+            }
+
+            function typeAdvanceNote() {
+                const text = '时空变迁，根脉不改，是南岛语族贯穿始终的演化逻辑。';
+                advanceNoteText.innerHTML = '';
+                let index = 0;
+                const cursor = document.createElement('span');
+                cursor.className = 'advance-note-cursor';
+
+                function typeChar() {
+                    if (index < text.length) {
+                        advanceNoteText.textContent += text[index];
+                        index++;
+                        advanceNoteText.appendChild(cursor);
+                        setTimeout(typeChar, 70);
+                    } else {
+                        stopTypingSound();
+                        cursor.style.animationIterationCount = '3';
+                        setTimeout(function () {
+                            cursor.style.opacity = '0';
+                            nextChapterBtn.classList.add('visible');
+                        }, 500);
+                    }
+                }
+
+                startTypingSound();
+                setTimeout(typeChar, 400);
+            }
+
+            function closeDiaryPanel() {
+                diaryTypingActive = false;
+                stopTypingSound();
+                diaryPage.classList.remove('open');
+                diaryPage.setAttribute('aria-hidden', 'true');
+                closeDiary.classList.remove('visible');
+                if (souvenirTimer) {
+                    clearTimeout(souvenirTimer);
+                    souvenirTimer = null;
+                }
+                hideSouvenirSection();
+                panelCompleted.log = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openStatusPanel() {
+                statusPanel.setAttribute('aria-hidden', 'false');
+                statusPanel.classList.add('open');
+            }
+
+            function closeStatusPanel() {
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.status = true;
+                checkAllPanelsCompleted();
+            }
+
+            // 循星迹与探航路小游戏
+            const starsGame = document.getElementById('stars-game');
+            const starsSky = document.getElementById('stars-sky');
+            const starsNextBtn = document.getElementById('stars-next-btn');
+            const migrationGame = document.getElementById('migration-game');
+            const migrationStartBtn = document.getElementById('migration-start-btn');
+            const migrationPathRef = document.getElementById('migration-path-ref');
+            const migrationSegments = document.querySelectorAll('.migration-segment');
+            const migrationCanoe = document.getElementById('migration-canoe');
+            const migrationNodes = document.querySelectorAll('.migration-node');
+            const migrationHint = document.getElementById('migration-hint');
+            const taskScroll = document.getElementById('task-scroll');
+            const taskResult = document.getElementById('task-result');
+            let starsLit = false;
+            let migrationStarted = false;
+            let routeCompleted = false;
+
+            function initStarsGame() {
+                if (!starsSky) return;
+                starsLit = false;
+                starsSky.querySelectorAll('.star').forEach(function (star) {
+                    star.classList.remove('visible');
+                });
+                starsNextBtn.classList.remove('visible');
+
+                starsSky.removeEventListener('click', lightStars);
+                starsSky.addEventListener('click', lightStars);
+            }
+
+            function lightStars() {
+                if (starsLit) return;
+                starsLit = true;
+
+                const stars = starsSky.querySelectorAll('.star');
+                stars.forEach(function (star, index) {
+                    setTimeout(function () {
+                        star.classList.add('visible');
+                    }, index * 120);
+                });
+
+                setTimeout(function () {
+                    starsNextBtn.classList.add('visible');
+                }, stars.length * 120 + 400);
+            }
+
+            function showMigrationGame() {
+                if (starsGame) starsGame.style.display = 'none';
+                if (migrationGame) migrationGame.style.display = 'block';
+                if (migrationStartBtn) migrationStartBtn.classList.add('visible');
+
+                // 未启航时重置为初始状态：各节点不相连、独木舟停留在第一个节点
+                resetMigrationState();
+                updateMigrationHint('点击“启航”，观察独木舟依次经过节点并绘制航线');
+            }
+
+            function resetMigrationState() {
+                migrationSegments.forEach(function (segment) {
+                    const length = segment.getTotalLength();
+                    segment.style.strokeDasharray = length;
+                    segment.style.strokeDashoffset = length;
+                    segment.classList.remove('revealed');
+                });
+
+                migrationNodes.forEach(function (node) {
+                    node.classList.remove('visited', 'next');
+                });
+
+                if (migrationCanoe) {
+                    migrationCanoe.setAttribute('opacity', '1');
+                    migrationCanoe.setAttribute('x', 80 - 22);
+                    migrationCanoe.setAttribute('y', 210 - 22);
+                }
+            }
+
+            function startMigration() {
+                if (migrationStarted || routeCompleted || !migrationPathRef || !migrationCanoe) return;
+                migrationStarted = true;
+
+                if (migrationStartBtn) migrationStartBtn.classList.remove('visible');
+                updateMigrationHint('木舟启航，航线正在绘制中……');
+
+                // 第一个节点为起点，默认已到访
+                migrationNodes.forEach(function (node) {
+                    node.classList.remove('visited', 'next');
+                });
+                migrationNodes[0].classList.add('visited');
+
+                const totalLength = migrationPathRef.getTotalLength();
+                const duration = 5000;
+                const startTime = performance.now();
+                let lastReachedNode = 0;
+
+                // 计算每个节点在参考路径上的累计长度
+                const nodeLengths = [];
+                migrationNodes.forEach(function (node) {
+                    const cx = parseFloat(node.getAttribute('cx'));
+                    const cy = parseFloat(node.getAttribute('cy'));
+                    let bestLen = 0;
+                    let bestDist = Infinity;
+                    const samples = 1000;
+                    for (let i = 0; i <= samples; i++) {
+                        const len = totalLength * i / samples;
+                        const pt = migrationPathRef.getPointAtLength(len);
+                        const dist = Math.hypot(pt.x - cx, pt.y - cy);
+                        if (dist < bestDist) {
+                            bestDist = dist;
+                            bestLen = len;
+                        }
+                    }
+                    nodeLengths.push(bestLen);
+                });
+
+                migrationCanoe.setAttribute('opacity', '1');
+
+                function animate(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const currentLen = totalLength * progress;
+
+                    // 木舟沿参考路径移动
+                    const point = migrationPathRef.getPointAtLength(currentLen);
+                    migrationCanoe.setAttribute('x', point.x - 22);
+                    migrationCanoe.setAttribute('y', point.y - 22);
+
+                    // 依次点亮经过的节点，并连接上一节点与当前节点
+                    for (let i = lastReachedNode + 1; i < migrationNodes.length; i++) {
+                        if (currentLen >= nodeLengths[i]) {
+                            migrationNodes[i].classList.add('visited');
+                            if (i > 0) {
+                                const segment = migrationSegments[i - 1];
+                                const segLen = segment.getTotalLength();
+                                segment.style.strokeDasharray = segLen;
+                                segment.style.strokeDashoffset = segLen;
+                                segment.getBoundingClientRect();
+                                segment.classList.add('revealed');
+                            }
+                            lastReachedNode = i;
+                        }
+                    }
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // 确保最终状态完整
+                        const endPoint = migrationPathRef.getPointAtLength(totalLength);
+                        migrationCanoe.setAttribute('x', endPoint.x - 22);
+                        migrationCanoe.setAttribute('y', endPoint.y - 22);
+                        migrationNodes.forEach(function (node) {
+                            node.classList.add('visited');
+                            node.classList.remove('next');
+                        });
+                        migrationSegments.forEach(function (segment) {
+                            const segLen = segment.getTotalLength();
+                            segment.style.strokeDasharray = segLen;
+                            segment.style.strokeDashoffset = '0';
+                            segment.classList.add('revealed');
+                        });
+
+                        routeCompleted = true;
+                        updateMigrationHint('航线绘制完成！', false, true);
+                        setTimeout(showTaskResult, 500);
+                    }
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            function updateMigrationHint(text, isError, isSuccess) {
+                if (!migrationHint) return;
+                migrationHint.textContent = text || '';
+                migrationHint.classList.remove('error', 'success');
+                if (isError) migrationHint.classList.add('error');
+                if (isSuccess) migrationHint.classList.add('success');
+            }
+
+            function showTaskResult() {
+                if (taskResult) {
+                    taskResult.style.display = 'block';
+                    closeTask.classList.add('visible');
+                }
+            }
+
+            function openTaskPanel() {
+                taskPanel.setAttribute('aria-hidden', 'false');
+                taskPanel.classList.add('open');
+                closeTask.classList.remove('visible');
+
+                // 若已完成，直接展示最终状态
+                if (routeCompleted) {
+                    if (starsGame) starsGame.style.display = 'none';
+                    if (migrationGame) migrationGame.style.display = 'block';
+                    if (taskResult) taskResult.style.display = 'block';
+                    if (migrationStartBtn) migrationStartBtn.classList.remove('visible');
+                    updateMigrationHint('航线绘制完成！', false, true);
+
+                    // 保持航线、木舟、节点在最终完成状态
+                    migrationSegments.forEach(function (segment) {
+                        const segLen = segment.getTotalLength();
+                        segment.style.strokeDasharray = segLen;
+                        segment.style.strokeDashoffset = '0';
+                        segment.classList.add('revealed');
+                    });
+                    if (migrationCanoe) {
+                        const totalLength = migrationPathRef.getTotalLength();
+                        const endPoint = migrationPathRef.getPointAtLength(totalLength);
+                        migrationCanoe.setAttribute('opacity', '1');
+                        migrationCanoe.setAttribute('x', endPoint.x - 22);
+                        migrationCanoe.setAttribute('y', endPoint.y - 22);
+                    }
+                    migrationNodes.forEach(function (node) {
+                        node.classList.add('visited');
+                        node.classList.remove('next');
+                    });
+
+                    closeTask.classList.add('visible');
+                    return;
+                }
+
+                if (starsGame) starsGame.style.display = 'block';
+                if (migrationGame) migrationGame.style.display = 'none';
+                if (taskResult) taskResult.style.display = 'none';
+
+                // 重置小游戏状态
+                resetMigrationState();
+                updateMigrationHint('点击“启航”，观察独木舟依次经过节点并绘制航线');
+                initStarsGame();
+                migrationStarted = false;
+            }
+
+            starsNextBtn.addEventListener('click', showMigrationGame);
+            migrationStartBtn.addEventListener('click', startMigration);
+
+            function closeTaskPanel() {
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.task = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openFieldPhotoPanel() {
+                fieldPhotoPanel.setAttribute('aria-hidden', 'false');
+                fieldPhotoPanel.classList.add('open');
+            }
+
+            function closeFieldPhotoPanel() {
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.fieldPhoto = true;
+                checkAllPanelsCompleted();
+            }
+
+            btnReadLog.addEventListener('click', openDiary);
+            closeDiary.addEventListener('click', closeDiaryPanel);
+            btnCheckStatus.addEventListener('click', openStatusPanel);
+            closeStatus.addEventListener('click', closeStatusPanel);
+            btnTodo.addEventListener('click', openTaskPanel);
+            closeTask.addEventListener('click', closeTaskPanel);
+            btnFieldPhotos.addEventListener('click', openFieldPhotoPanel);
+            closeFieldPhoto.addEventListener('click', closeFieldPhotoPanel);
+            nextChapterBtn.addEventListener('click', function () {
+                window.location.href = 'chapter11.html';
+            });
+        })();
+    </script>
+    <script src="js/progress-bar.js"></script>
+    <script src="js/global-music.js"></script>
+</body>
+</html>
+
+
+
+

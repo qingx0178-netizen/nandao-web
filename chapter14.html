@@ -1,0 +1,1357 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第七章：回响——探索</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/progress-bar.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            background-image: url('assets/第七章/终章背景.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+        }
+
+        /* 探索页面舞台 */
+        .explore-stage {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 日记本内页 */
+        .diary-page {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: min(72vw, 820px);
+            max-height: 76vh;
+            padding: 5vh 5vw;
+            overflow-y: auto;
+            background-color: #F7F4EC;
+            background-image: url('assets/第一章/纸页.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            border-radius: 3px;
+            box-shadow:
+                0 8px 36px rgba(0, 0, 0, 0.14),
+                0 0 0 1px rgba(117, 104, 91, 0.12),
+                inset 0 0 80px rgba(160, 150, 130, 0.12);
+            z-index: 40;
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -50%) scale(0.96);
+            transition: opacity 0.6s ease, visibility 0.6s ease, transform 0.6s ease;
+        }
+
+        .diary-page.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .diary-page::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
+            left: 20px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .diary-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .diary-text p {
+            margin-bottom: 1.6em;
+            text-indent: 2em;
+        }
+
+        .diary-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 2em;
+            color: #5C5348;
+        }
+
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .diary-page::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .diary-page::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .diary-page::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        /* 关闭日记 */
+        .close-diary {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.7em 1.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-decoration: none;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-diary.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-diary:hover,
+        .close-diary:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        /* 纪念物日记本展示 */
+        .souvenir-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2.5em;
+        }
+
+        .souvenir-image,
+        .souvenir-caption {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .souvenir-image.visible,
+        .souvenir-caption.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .souvenir-image {
+            width: min(140px, 32vw);
+            height: auto;
+        }
+
+        .souvenir-caption {
+            margin-top: 1em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+            letter-spacing: 0.08em;
+            line-height: 1.8;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        /* 底部交互面板 */
+        .bottom-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: clamp(16px, 4vw, 48px);
+            padding: 0 5vw 6vh;
+            z-index: 5;
+            opacity: 0;
+            animation: panelFadeIn 1.2s ease-out 0.4s forwards;
+        }
+
+        @keyframes panelFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 状态图片展示面板 */
+        .status-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .status-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .status-content {
+            position: relative;
+            width: min(78vw, 960px);
+            height: min(78vh, 680px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .status-panel.open .status-content {
+            transform: scale(1);
+        }
+
+        .status-image {
+            width: 100%;
+            height: calc(100% - 60px);
+            object-fit: fill;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .close-status {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-status:hover,
+        .close-status:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 任务面板（循星迹与探航路） */
+        .task-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .task-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .task-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 0;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .task-panel.open .task-content {
+            transform: scale(1);
+        }
+
+        .task-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5vh 5vw;
+            scrollbar-width: thin;
+        }
+
+        .task-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .task-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .task-scroll::-webkit-scrollbar-thumb {
+            background: rgba(117, 104, 91, 0.25);
+            border-radius: 3px;
+        }
+
+        .task-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+            line-height: 2.2;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+        }
+
+        .task-text p {
+            margin-bottom: 1.4em;
+            text-indent: 2em;
+        }
+
+        .task-text p:first-child {
+            text-indent: 0;
+            margin-bottom: 1.8em;
+            color: #5C5348;
+        }
+
+        .task-image {
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            display: block;
+            margin: 1em 0 0;
+            border-radius: 2px;
+        }
+
+        .task-image-caption {
+            text-align: center;
+            font-size: 0.85em;
+            color: #75685B;
+            margin-top: 0.6em;
+            letter-spacing: 0.1em;
+        }
+
+        .close-task {
+            display: block;
+            width: fit-content;
+            margin: 2em auto 0;
+            padding: 0.7em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-task.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .close-task:hover,
+        .close-task:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 写下对南岛语族的祝福小游戏区域 */
+        .blessing-phase {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100%;
+            padding: 3vh 0;
+        }
+
+        .game-hint {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2.2vw, 1.4rem);
+            letter-spacing: 0.35em;
+            color: #6B6055;
+            margin-bottom: 0.6em;
+            text-align: center;
+        }
+
+        .blessing-hint-sub {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.5vw, 1rem);
+            letter-spacing: 0.18em;
+            color: #8A7E6F;
+            margin-bottom: 1.8em;
+            text-align: center;
+        }
+
+        .blessing-input {
+            width: 100%;
+            max-width: 520px;
+            min-height: 100px;
+            padding: 1em 1.2em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+            line-height: 1.9;
+            letter-spacing: 0.04em;
+            color: #3D352C;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(117, 104, 91, 0.32);
+            border-radius: 3px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .blessing-input::placeholder {
+            color: #9C8F7E;
+        }
+
+        .blessing-input:focus {
+            border-color: rgba(117, 104, 91, 0.55);
+            background: rgba(255, 255, 255, 0.86);
+            box-shadow: 0 0 0 3px rgba(117, 104, 91, 0.08);
+        }
+
+        .blessing-char-count {
+            width: 100%;
+            max-width: 520px;
+            margin-top: 0.6em;
+            text-align: right;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.75rem, 1.2vw, 0.88rem);
+            letter-spacing: 0.08em;
+            color: #8A7E6F;
+        }
+
+        .star-sea {
+            position: relative;
+            width: min(78vw, 560px);
+            margin-top: 2em;
+            border-radius: 3px;
+            overflow: hidden;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .star-sea img:first-child {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .drift-bottle {
+            position: absolute;
+            bottom: 12%;
+            right: 12%;
+            width: 18%;
+            max-width: 90px;
+            height: auto;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: opacity 1.2s ease, transform 1.2s ease;
+        }
+
+        .drift-bottle.visible {
+            opacity: 1;
+            transform: translateY(0);
+            animation: bottleFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes bottleFloat {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+
+        .send-blessing-btn {
+            display: block;
+            width: fit-content;
+            margin: 2em auto 0;
+            padding: 0.75em 2em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.32);
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease, transform 0.2s ease;
+        }
+
+        .send-blessing-btn:hover,
+        .send-blessing-btn:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.32);
+            transform: translateY(-2px);
+        }
+
+        .send-blessing-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .blessing-complete {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2em;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .blessing-complete.visible {
+            display: flex;
+        }
+
+        .blessing-complete-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.95rem, 1.7vw, 1.1rem);
+            letter-spacing: 0.12em;
+            color: #5C7A5C;
+            text-align: center;
+            margin-bottom: 1.2em;
+        }
+
+        .blessing-complete .close-task {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(12px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .task-result {
+            display: none;
+        }
+
+        /* 科考实拍展示面板 */
+        .field-photo-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.42);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .field-photo-panel.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .field-photo-content {
+            position: relative;
+            width: min(78vw, 900px);
+            height: min(80vh, 720px);
+            padding: 18px;
+            background: #F5F0E3;
+            border-radius: 3px;
+            box-shadow:
+                0 12px 48px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(117, 104, 91, 0.18),
+                inset 0 0 60px rgba(160, 150, 130, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: scale(0.96);
+            transition: transform 0.5s ease;
+        }
+
+        .field-photo-panel.open .field-photo-content {
+            transform: scale(1);
+        }
+
+        .field-photo-image {
+            width: 100%;
+            height: calc(100% - 110px);
+            object-fit: contain;
+            display: block;
+            border-radius: 2px;
+        }
+
+        .field-photo-caption {
+            margin-top: 14px;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.12em;
+            color: #5C5348;
+            text-align: center;
+        }
+
+        .close-field-photo {
+            margin-top: 16px;
+            padding: 0.6em 1.8em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.82rem, 1.4vw, 1rem);
+            letter-spacing: 0.28em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .close-field-photo:hover,
+        .close-field-photo:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 章节推进纸条 */
+        .advance-note {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(30, 26, 22, 0.48);
+            z-index: 30;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+
+        .advance-note.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .advance-note-content {
+            position: relative;
+            width: min(72vw, 620px);
+            padding: 6vh 6vw;
+            background:
+                linear-gradient(to bottom, #F5F0E3, #EDE8DC);
+            background-size: cover;
+            border-radius: 2px;
+            box-shadow:
+                0 10px 40px rgba(0, 0, 0, 0.18),
+                0 0 0 1px rgba(117, 104, 91, 0.15),
+                inset 0 0 50px rgba(160, 150, 130, 0.1);
+            transform: scale(0.96) rotate(-1deg);
+            transition: transform 0.6s ease;
+        }
+
+        .advance-note.open .advance-note-content {
+            transform: scale(1) rotate(-0.5deg);
+        }
+
+        .advance-note-content::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            bottom: 16px;
+            left: 16px;
+            border: 1px solid rgba(117, 104, 91, 0.1);
+            pointer-events: none;
+        }
+
+        .advance-note-text {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(1rem, 2vw, 1.35rem);
+            line-height: 2.2;
+            letter-spacing: 0.06em;
+            color: #3D352C;
+            text-align: center;
+            min-height: 4em;
+        }
+
+        .advance-note-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.1em;
+            background: #75685B;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: cursorBlink 1s step-end infinite;
+        }
+
+        .welcome-home {
+            font-weight: 500;
+            letter-spacing: 0.1em;
+        }
+
+        .advance-note-image {
+            display: block;
+            width: 100%;
+            max-width: 420px;
+            height: auto;
+            margin: 1.5em auto 0;
+            border-radius: 2px;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .advance-note-image.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .next-chapter-btn {
+            display: block;
+            width: fit-content;
+            margin: 2.5em auto 0;
+            padding: 0.75em 2em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            border: 1px solid rgba(92, 83, 72, 0.32);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease, color 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .next-chapter-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .next-chapter-btn:hover,
+        .next-chapter-btn:focus {
+            color: #3D352C;
+            border-color: rgba(92, 83, 72, 0.55);
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        /* 卷轴入口 */
+        .scroll-entry {
+            position: relative;
+            flex: 1;
+            max-width: 220px;
+            padding: 1.1em 0.6em;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.8rem, 1.4vw, 1rem);
+            letter-spacing: 0.22em;
+            color: #5C5348;
+            text-align: center;
+            background: linear-gradient(to right, #E2D9C4 0%, #F5F0E3 12%, #F5F0E3 88%, #E2D9C4 100%);
+            border: 1px solid rgba(117, 104, 91, 0.32);
+            border-radius: 3px;
+            box-shadow:
+                0 4px 14px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, color 0.25s ease;
+        }
+
+        .scroll-entry::before,
+        .scroll-entry::after {
+            content: '';
+            position: absolute;
+            top: -1px;
+            width: 14px;
+            height: calc(100% + 2px);
+            background: linear-gradient(to bottom, #C9BEA8, #DDD5C2 40%, #DDD5C2 60%, #C9BEA8);
+            border: 1px solid rgba(117, 104, 91, 0.35);
+            border-radius: 2px;
+            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.06);
+            pointer-events: none;
+        }
+
+        .scroll-entry::before {
+            left: -8px;
+        }
+
+        .scroll-entry::after {
+            right: -8px;
+        }
+
+        .scroll-entry:hover,
+        .scroll-entry:focus {
+            color: #3D352C;
+            background: linear-gradient(to right, #DDD5C2 0%, #FAF8F0 12%, #FAF8F0 88%, #DDD5C2 100%);
+            transform: translateY(-4px);
+            box-shadow:
+                0 8px 22px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+    </style>
+</head>
+<body>
+    <div class="explore-stage">
+        <!-- 日记本内页 -->
+        <article class="diary-page" id="diary-page" aria-hidden="true">
+            <div class="diary-text" id="diary-text"></div>
+            <div class="souvenir-section" id="souvenir-section">
+                <img class="souvenir-image" id="souvenir-image" src="assets/第七章/日志本.png" alt="日志本">
+                <div class="souvenir-caption" id="souvenir-caption">解锁纪念物：充满回忆的日记本</div>
+            </div>
+            <a class="close-diary" id="close-diary" aria-label="关闭日记">关闭日记</a>
+        </article>
+
+        <!-- 状态图片展示面板 -->
+        <div class="status-panel" id="status-panel" aria-hidden="true">
+            <div class="status-content">
+                <img class="status-image" id="status-image" src="assets/images/状态7.jpg" alt="状态查看">
+                <button class="close-status" id="close-status" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 任务面板（写下对南岛语族的祝福） -->
+        <div class="task-panel" id="task-panel" aria-hidden="true">
+            <div class="task-content" id="task-content">
+                <div class="task-scroll" id="task-scroll">
+                    <div class="blessing-phase" id="blessing-phase">
+                        <div class="game-hint">写下对南岛语族的祝福</div>
+                        <div class="blessing-hint-sub">愿这份心意随漂流瓶漂向远方（50字以内）</div>
+                        <textarea class="blessing-input" id="blessing-input" maxlength="50" placeholder="请输入你的祝福……" rows="3"></textarea>
+                        <div class="blessing-char-count" id="blessing-char-count">0 / 50</div>
+
+                        <div class="star-sea" id="star-sea">
+                            <img src="assets/images/星辰大海.png" alt="星辰大海">
+                            <img class="drift-bottle" id="drift-bottle" src="assets/images/漂流瓶.png" alt="漂流瓶">
+                        </div>
+
+                        <button class="send-blessing-btn" id="send-blessing-btn" type="button">投递漂流瓶</button>
+
+                        <div class="blessing-complete" id="blessing-complete">
+                            <div class="blessing-complete-text">你的祝福已随漂流瓶驶向星辰大海。</div>
+                            <button class="close-task" id="close-task" type="button">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 科考实拍展示面板 -->
+        <div class="field-photo-panel" id="field-photo-panel" aria-hidden="true">
+            <div class="field-photo-content">
+                <img class="field-photo-image" src="assets/第七章/科考实拍7.jpg" alt="科考实拍">
+                <div class="field-photo-caption">拍摄于12月1日，望海寻踪。</div>
+                <button class="close-field-photo" id="close-field-photo" type="button">关闭</button>
+            </div>
+        </div>
+
+        <!-- 章节推进纸条 -->
+        <div class="advance-note" id="advance-note" aria-hidden="true">
+            <div class="advance-note-content">
+                <div class="advance-note-text" id="advance-note-text"></div>
+                <img class="advance-note-image" id="advance-note-image" src="assets/images/海风与远航.png" alt="海风与远航">
+                <button class="next-chapter-btn" id="next-chapter-btn" type="button">回到首页</button>
+            </div>
+        </div>
+
+        <!-- 底部交互面板 -->
+        <nav class="bottom-panel" id="bottom-panel">
+            <button class="scroll-entry" id="btn-read-log" type="button">阅读日志</button>
+            <button class="scroll-entry" id="btn-check-status" type="button">查看状态</button>
+            <button class="scroll-entry" id="btn-todo" type="button">待办任务</button>
+            <button class="scroll-entry" id="btn-field-photos" type="button">科考实拍</button>
+        </nav>
+    </div>
+
+    <script>
+        (function () {
+            const diaryPage = document.getElementById('diary-page');
+            const diaryText = document.getElementById('diary-text');
+            const closeDiary = document.getElementById('close-diary');
+            const souvenirSection = document.getElementById('souvenir-section');
+            const souvenirImage = document.getElementById('souvenir-image');
+            const souvenirCaption = document.getElementById('souvenir-caption');
+            const statusPanel = document.getElementById('status-panel');
+            const closeStatus = document.getElementById('close-status');
+            const taskPanel = document.getElementById('task-panel');
+            const taskContent = document.getElementById('task-content');
+            const closeTask = document.getElementById('close-task');
+            const fieldPhotoPanel = document.getElementById('field-photo-panel');
+            const closeFieldPhoto = document.getElementById('close-field-photo');
+            const advanceNote = document.getElementById('advance-note');
+            const advanceNoteText = document.getElementById('advance-note-text');
+            const advanceNoteImage = document.getElementById('advance-note-image');
+            const nextChapterBtn = document.getElementById('next-chapter-btn');
+            const btnReadLog = document.getElementById('btn-read-log');
+            const btnCheckStatus = document.getElementById('btn-check-status');
+            const btnTodo = document.getElementById('btn-todo');
+            const btnFieldPhotos = document.getElementById('btn-field-photos');
+
+            const paragraphs = [
+                '日期：12月1日  天气：晴，万里无云',
+                '今天是我在平潭的最后一天。我独自带着PT-01号陶片拓本，走向平潭海边。',
+                '雾气已然散去，海洋裸露出浓郁清亮的湛蓝色。我把此次考古之行，写进了我的日志里，像千年前先民在陶罐里装上火种、谷物，走向海的深处。',
+                '没有围墙，没有疆界。所有同属南岛语系的人，都可以彼此问好，彼此祝福。',
+                '愿我们遵循先人的足迹，不畏山海阻隔，不惧风雨摧折，踏浪而行，步履坚定。'
+            ];
+
+            const baseSpeed = 52;
+            const pauseAfterComma = 120;
+            const pauseAfterPeriod = 280;
+            const pauseBetweenParagraphs = 500;
+
+            let pIndex = 0;
+            let cIndex = 0;
+            let currentP = null;
+            let hasTyped = false;
+            let isTyping = false;
+            let diaryTypingActive = false;
+            let souvenirTimer = null;
+
+            bindSouvenirTransitions();
+
+            const cursor = document.createElement('span');
+            cursor.className = 'typing-cursor';
+
+            function resetDiary() {
+                diaryText.innerHTML = '';
+                pIndex = 0;
+                cIndex = 0;
+                currentP = null;
+            }
+
+            function startParagraph() {
+                currentP = document.createElement('p');
+                diaryText.appendChild(currentP);
+                cIndex = 0;
+            }
+
+            function getDelay(char) {
+                if ('，、'.includes(char)) return pauseAfterComma;
+                if ('。！？'.includes(char)) return pauseAfterPeriod;
+                return baseSpeed;
+            }
+
+            let typingAudio = null;
+
+            function initTypingAudio() {
+                if (!typingAudio) {
+                    typingAudio = new Audio('assets/第一章/打字音效.mp3');
+                    typingAudio.preload = 'auto';
+                    typingAudio.loop = true;
+                    typingAudio.volume = 0.42;
+                }
+            }
+
+            function startTypingSound() {
+                initTypingAudio();
+                if (!typingAudio) return;
+                typingAudio.currentTime = 0;
+                typingAudio.play().catch(function () {});
+            }
+
+            function stopTypingSound() {
+                if (!typingAudio) return;
+                typingAudio.pause();
+                typingAudio.currentTime = 0;
+            }
+
+            function showSouvenirImage() {
+                if (souvenirImage) souvenirImage.classList.add('visible');
+            }
+
+            function showSouvenirCaption() {
+                if (souvenirCaption) souvenirCaption.classList.add('visible');
+            }
+
+            function hideSouvenirSection() {
+                if (souvenirImage) souvenirImage.classList.remove('visible');
+                if (souvenirCaption) souvenirCaption.classList.remove('visible');
+                if (souvenirTimer) {
+                    clearTimeout(souvenirTimer);
+                    souvenirTimer = null;
+                }
+            }
+
+            function showCloseDiaryHint() {
+                souvenirTimer = setTimeout(function () {
+                    if (!diaryPage.classList.contains('open')) return;
+                    closeDiary.classList.add('visible');
+                }, 500);
+            }
+
+            function bindSouvenirTransitions() {
+                if (souvenirImage) {
+                    souvenirImage.addEventListener('transitionend', function (e) {
+                        if (e.propertyName === 'opacity' && souvenirImage.classList.contains('visible')) {
+                            showSouvenirCaption();
+                        }
+                    });
+                }
+                if (souvenirCaption) {
+                    souvenirCaption.addEventListener('transitionend', function (e) {
+                        if (e.propertyName === 'opacity' && souvenirCaption.classList.contains('visible')) {
+                            showCloseDiaryHint();
+                        }
+                    });
+                }
+            }
+
+            function typeNext() {
+                if (!diaryTypingActive) return;
+                if (pIndex >= paragraphs.length) {
+                    if (!diaryTypingActive) return;
+                    isTyping = false;
+                    hasTyped = true;
+                    stopTypingSound();
+                    cursor.style.animationIterationCount = '3';
+                    setTimeout(function () {
+                        if (!diaryTypingActive) return;
+                        cursor.style.opacity = '0';
+                        showSouvenirImage();
+                    }, 400);
+                    return;
+                }
+
+                if (currentP === null) {
+                    startParagraph();
+                }
+
+                const text = paragraphs[pIndex];
+                if (cIndex < text.length) {
+                    const char = text[cIndex];
+                    currentP.textContent += char;
+                    cIndex++;
+                    currentP.appendChild(cursor);
+                    setTimeout(typeNext, getDelay(char));
+                } else {
+                    pIndex++;
+                    currentP = null;
+                    if (pIndex < paragraphs.length) {
+                        setTimeout(typeNext, pauseBetweenParagraphs);
+                    } else {
+                        typeNext();
+                    }
+                }
+            }
+
+            function openDiary() {
+                // 关闭其他可能遮挡日记的弹窗（不标记完成状态）
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+
+                diaryPage.setAttribute('aria-hidden', 'false');
+                diaryPage.classList.add('open');
+
+                if (!hasTyped) {
+                    resetDiary();
+                    hideSouvenirSection();
+                    closeDiary.classList.remove('visible');
+                    diaryTypingActive = true;
+                    isTyping = true;
+                    startTypingSound();
+                    setTimeout(typeNext, 300);
+                } else {
+                    // 已经阅读过，直接显示纪念物与关闭提示
+                    diaryTypingActive = true;
+                    showSouvenirImage();
+                    showSouvenirCaption();
+                    closeDiary.classList.add('visible');
+                }
+            }
+
+            const panelCompleted = {
+                log: false,
+                status: false,
+                task: false,
+                fieldPhoto: false
+            };
+            let advanceNoteShown = false;
+
+            function checkAllPanelsCompleted() {
+                if (advanceNoteShown) return;
+                const allCompleted = panelCompleted.log && panelCompleted.status &&
+                                     panelCompleted.task && panelCompleted.fieldPhoto;
+                if (allCompleted) {
+                    advanceNoteShown = true;
+                    setTimeout(showAdvanceNote, 400);
+                }
+            }
+
+            function showAdvanceNote() {
+                advanceNote.setAttribute('aria-hidden', 'false');
+                advanceNote.classList.add('open');
+                typeAdvanceNote();
+            }
+
+            function typeAdvanceNote() {
+                const text = '无论走得多远，只要还记得来时的路，就从未真正离开过。\n南岛语的海洋，认得每一道涌动的波浪。';
+                advanceNoteText.innerHTML = '';
+                if (advanceNoteImage) advanceNoteImage.classList.remove('visible');
+                let index = 0;
+                const cursor = document.createElement('span');
+                cursor.className = 'advance-note-cursor';
+
+                function typeChar() {
+                    if (index < text.length) {
+                        const char = text[index];
+                        if (char === '\n') {
+                            advanceNoteText.appendChild(document.createElement('br'));
+                        } else {
+                            advanceNoteText.textContent += char;
+                        }
+                        index++;
+                        advanceNoteText.appendChild(cursor);
+                        setTimeout(typeChar, 70);
+                    } else {
+                        stopTypingSound();
+                        cursor.style.animationIterationCount = '3';
+                        setTimeout(function () {
+                            cursor.style.opacity = '0';
+                            advanceNoteText.appendChild(document.createElement('br'));
+                            advanceNoteText.appendChild(document.createElement('br'));
+                            const welcomeSpan = document.createElement('span');
+                            welcomeSpan.className = 'welcome-home';
+                            welcomeSpan.textContent = '欢迎回家！';
+                            advanceNoteText.appendChild(welcomeSpan);
+
+                            if (advanceNoteImage) advanceNoteImage.classList.add('visible');
+                            setTimeout(function () {
+                                nextChapterBtn.classList.add('visible');
+                            }, 600);
+                        }, 500);
+                    }
+                }
+
+                startTypingSound();
+                setTimeout(typeChar, 400);
+            }
+
+            function closeDiaryPanel() {
+                stopTypingSound();
+                diaryPage.classList.remove('open');
+                diaryPage.setAttribute('aria-hidden', 'true');
+                closeDiary.classList.remove('visible');
+                if (souvenirTimer) {
+                    clearTimeout(souvenirTimer);
+                    souvenirTimer = null;
+                }
+                hideSouvenirSection();
+                panelCompleted.log = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openStatusPanel() {
+                statusPanel.setAttribute('aria-hidden', 'false');
+                statusPanel.classList.add('open');
+            }
+
+            function closeStatusPanel() {
+                statusPanel.classList.remove('open');
+                statusPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.status = true;
+                checkAllPanelsCompleted();
+            }
+
+            // 写下对南岛语族的祝福小游戏
+            const blessingInput = document.getElementById('blessing-input');
+            const blessingCharCount = document.getElementById('blessing-char-count');
+            const sendBlessingBtn = document.getElementById('send-blessing-btn');
+            const driftBottle = document.getElementById('drift-bottle');
+            const blessingComplete = document.getElementById('blessing-complete');
+            let taskCompleted = false;
+
+            let windChimeAudio = null;
+
+            function playWindChime() {
+                if (!windChimeAudio) {
+                    windChimeAudio = new Audio('assets/第七章/风铃.wav');
+                    windChimeAudio.preload = 'auto';
+                }
+                windChimeAudio.currentTime = 0;
+                windChimeAudio.play().catch(function () {});
+            }
+
+            function updateCharCount() {
+                if (!blessingInput || !blessingCharCount) return;
+                const len = blessingInput.value.length;
+                blessingCharCount.textContent = len + ' / 50';
+                if (len > 50) {
+                    blessingCharCount.style.color = '#A65D57';
+                } else {
+                    blessingCharCount.style.color = '#8A7E6F';
+                }
+            }
+
+            function initBlessingGame() {
+                taskCompleted = false;
+                if (blessingInput) {
+                    blessingInput.value = '';
+                    blessingInput.disabled = false;
+                }
+                updateCharCount();
+                if (sendBlessingBtn) {
+                    sendBlessingBtn.disabled = false;
+                    sendBlessingBtn.style.display = 'block';
+                }
+                if (driftBottle) driftBottle.classList.remove('visible');
+                if (blessingComplete) blessingComplete.classList.remove('visible');
+            }
+
+            function sendBlessing() {
+                if (!blessingInput || taskCompleted) return;
+                const text = blessingInput.value.trim();
+                if (!text) {
+                    blessingInput.focus();
+                    return;
+                }
+                taskCompleted = true;
+
+                if (blessingInput) blessingInput.disabled = true;
+                if (sendBlessingBtn) sendBlessingBtn.style.display = 'none';
+                if (driftBottle) {
+                    driftBottle.classList.add('visible');
+                    playWindChime();
+                }
+
+                setTimeout(function () {
+                    if (blessingComplete) blessingComplete.classList.add('visible');
+                    closeTask.classList.add('visible');
+                }, 1400);
+            }
+
+            function openTaskPanel() {
+                taskPanel.setAttribute('aria-hidden', 'false');
+                taskPanel.classList.add('open');
+                closeTask.classList.remove('visible');
+
+                // 若已完成，直接展示完成状态
+                if (taskCompleted) {
+                    if (blessingInput) blessingInput.disabled = true;
+                    if (sendBlessingBtn) sendBlessingBtn.style.display = 'none';
+                    if (driftBottle) driftBottle.classList.add('visible');
+                    if (blessingComplete) blessingComplete.classList.add('visible');
+                    closeTask.classList.add('visible');
+                    return;
+                }
+
+                initBlessingGame();
+            }
+
+            if (blessingInput) {
+                blessingInput.addEventListener('input', updateCharCount);
+            }
+            if (sendBlessingBtn) {
+                sendBlessingBtn.addEventListener('click', sendBlessing);
+            }
+
+            function closeTaskPanel() {
+                taskPanel.classList.remove('open');
+                taskPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.task = true;
+                checkAllPanelsCompleted();
+            }
+
+            function openFieldPhotoPanel() {
+                fieldPhotoPanel.setAttribute('aria-hidden', 'false');
+                fieldPhotoPanel.classList.add('open');
+            }
+
+            function closeFieldPhotoPanel() {
+                fieldPhotoPanel.classList.remove('open');
+                fieldPhotoPanel.setAttribute('aria-hidden', 'true');
+                panelCompleted.fieldPhoto = true;
+                checkAllPanelsCompleted();
+            }
+
+            btnReadLog.addEventListener('click', openDiary);
+            closeDiary.addEventListener('click', closeDiaryPanel);
+            btnCheckStatus.addEventListener('click', openStatusPanel);
+            closeStatus.addEventListener('click', closeStatusPanel);
+            btnTodo.addEventListener('click', openTaskPanel);
+            closeTask.addEventListener('click', closeTaskPanel);
+            btnFieldPhotos.addEventListener('click', openFieldPhotoPanel);
+            closeFieldPhoto.addEventListener('click', closeFieldPhotoPanel);
+            nextChapterBtn.addEventListener('click', function () {
+                window.location.href = 'index.html';
+            });
+        })();
+    </script>
+    <script src="js/progress-bar.js"></script>
+    <script src="js/global-music.js"></script>
+</body>
+</html>
+
+
+
+
