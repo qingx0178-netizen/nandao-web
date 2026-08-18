@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海屿寻踪——南岛语族数字交互日记</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/progress-bar.css">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400&family=Zhi+Mang+Xiang&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'ChiBiFuTi';
+            src: url('assets/fonts/赤壁赋体.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Ma Shan Zheng", "Zhi Mang Xiang", "STXingkai", "Xingkai SC", "KaiTi", "楷体", cursive, serif;
+        }
+
+        .hero {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            background-color: #8FB2C8;
+            background-image: url('assets/images/首页底图.png');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            overflow: hidden;
+        }
+
+        /* 东方云纹装饰层 */
+        .cloud-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            display: flex;
+            z-index: 2;
+            opacity: 0.35;
+            pointer-events: none;
+            animation: cloudDrift 80s linear infinite;
+        }
+
+        .cloud-layer img {
+            width: 50%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        @keyframes cloudDrift {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* 标题 */
+        .title {
+            position: absolute;
+            top: 16%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            text-align: center;
+            color: #1a1a1a;
+            padding: 0 20px;
+            pointer-events: none;
+        }
+
+        .title-main {
+            position: relative;
+            font-family: "ChiBiFuTi", "Ma Shan Zheng", "Zhi Mang Xiang", "STXingkai", "Xingkai SC", "KaiTi", "楷体", cursive, serif;
+            font-size: clamp(3.2rem, 10vw, 7.5rem);
+            letter-spacing: 0.35em;
+            margin-bottom: 0.35em;
+            font-weight: 400;
+            line-height: 1.3;
+            color: #75685B;
+        }
+
+        .title-sub {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.8vw, 1.25rem);
+            letter-spacing: 0.28em;
+            opacity: 0.88;
+            font-weight: 500;
+            color: #75685B;
+        }
+
+        /* 标题文字逐字浮现动画 */
+        .title-char {
+            display: inline-block;
+            opacity: 0;
+            will-change: opacity, transform;
+            animation: titleEmergence 1.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+
+        .title-sub .title-char {
+            animation-duration: 1.1s;
+        }
+
+        @keyframes titleEmergence {
+            0% {
+                opacity: 0;
+                transform: translateY(18px) scale(0.94);
+            }
+            55% {
+                opacity: 0.8;
+                transform: translateY(2px) scale(1.01);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* 开启考古之旅入口 */
+        .journey-wrap {
+            position: absolute;
+            bottom: 18%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.2em;
+            opacity: 0;
+            pointer-events: none;
+            animation: journey-fade-in 1.2s ease-out 3.5s forwards;
+        }
+
+        .journey-hint {
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.8rem, 1.5vw, 1rem);
+            letter-spacing: 0.28em;
+            line-height: 1.8;
+            color: #75685B;
+            text-align: center;
+            opacity: 0.92;
+            text-shadow: 0 1px 10px rgba(255, 255, 255, 0.7);
+            pointer-events: none;
+        }
+
+        .start-journey {
+            position: relative;
+            font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+            font-size: clamp(0.9rem, 1.8vw, 1.25rem);
+            letter-spacing: 0.35em;
+            color: #75685B;
+            text-decoration: none;
+            cursor: pointer;
+            opacity: 1;
+            padding: 0.95em 2.2em;
+            background: transparent;
+            border: none;
+            animation: journey-breathe 3s ease-in-out 4.7s infinite;
+            transition: color 0.3s ease, filter 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .start-journey::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 130%;
+            height: 260%;
+            background: transparent url('assets/images/贝壳边框.png') center center no-repeat;
+            background-size: 100% 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .start-journey .corner {
+            display: none;
+        }
+
+        .start-journey:hover,
+        .start-journey:focus {
+            color: #5C4F45;
+            filter: brightness(1.05);
+        }
+
+        /* 四角简约东方纹样 */
+        .corner {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+        }
+
+        .corner::before,
+        .corner::after {
+            content: '';
+            position: absolute;
+            background: #75685B;
+        }
+
+        .corner-tl {
+            top: -1px;
+            left: -1px;
+        }
+        .corner-tl::before {
+            top: 0;
+            left: 0;
+            width: 14px;
+            height: 2px;
+        }
+        .corner-tl::after {
+            top: 0;
+            left: 0;
+            width: 2px;
+            height: 14px;
+        }
+
+        .corner-tr {
+            top: -1px;
+            right: -1px;
+        }
+        .corner-tr::before {
+            top: 0;
+            right: 0;
+            width: 14px;
+            height: 2px;
+        }
+        .corner-tr::after {
+            top: 0;
+            right: 0;
+            width: 2px;
+            height: 14px;
+        }
+
+        .corner-bl {
+            bottom: -1px;
+            left: -1px;
+        }
+        .corner-bl::before {
+            bottom: 0;
+            left: 0;
+            width: 14px;
+            height: 2px;
+        }
+        .corner-bl::after {
+            bottom: 0;
+            left: 0;
+            width: 2px;
+            height: 14px;
+        }
+
+        .corner-br {
+            bottom: -1px;
+            right: -1px;
+        }
+        .corner-br::before {
+            bottom: 0;
+            right: 0;
+            width: 14px;
+            height: 2px;
+        }
+        .corner-br::after {
+            bottom: 0;
+            right: 0;
+            width: 2px;
+            height: 14px;
+        }
+
+        @keyframes journey-fade-in {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 12px);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        @keyframes journey-breathe {
+            0%, 100% {
+                opacity: 0.78;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="cloud-layer" aria-hidden="true">
+            <img src="assets/images/云纹.png" alt="">
+            <img src="assets/images/云纹.png" alt="">
+        </div>
+
+        <div class="title">
+            <div class="title-main">海屿寻踪</div>
+            <div class="title-sub">南岛语族数字交互日记</div>
+        </div>
+
+        <div class="journey-wrap">
+            <div class="journey-hint">雾散见海，向海而生，追寻同源共流的精神原乡。</div>
+            <a href="transition.html" class="start-journey" aria-label="点击开启考古之旅">
+                <span class="corner corner-tl"></span>
+                <span class="corner corner-tr"></span>
+                <span class="corner corner-bl"></span>
+                <span class="corner corner-br"></span>
+                点击开启考古之旅
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // 标题逐字浮现
+        function splitTitle(element, baseDelay, stagger) {
+            const text = element.textContent.trim();
+            element.innerHTML = '';
+            [...text].forEach((char, index) => {
+                const span = document.createElement('span');
+                span.className = 'title-char';
+                span.textContent = char;
+                span.style.animationDelay = (baseDelay + index * stagger) + 's';
+                element.appendChild(span);
+            });
+        }
+
+        splitTitle(document.querySelector('.title-main'), 0.3, 0.28);
+        splitTitle(document.querySelector('.title-sub'), 1.2, 0.12);
+    </script>
+    <script src="js/progress-bar.js"></script>
+    <script src="js/global-music.js"></script>
+</body>
+</html>
